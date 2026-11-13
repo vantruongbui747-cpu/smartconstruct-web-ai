@@ -1,0 +1,234 @@
+================================================================================
+TÀI LIỆU ĐẶC TẢ KỸ THUẬT PHẦN MỀM (SOFTWARE REQUIREMENTS SPECIFICATION - SRS)
+DỰ ÁN: SMARTCONSTRUCT WEB AI (ALL-IN-ONE CIVIL ENGINEERING AI PLATFORM)
+Hạng mục: BẢNG A – Sáng tạo Phần mềm, Website bằng AI
+Mục đích tài liệu: Hướng dẫn chi tiết kiến trúc, công thức toán học, cấu trúc dữ 
+liệu và giao diện để Lập trình viên (Developer) đọc hiểu và code chính xác 100%.
+================================================================================
+
+I. TỔNG QUAN KIẾN TRÚC HỆ THỐNG DÀNH CHO DEVELOPER
+--------------------------------------------------------------------------------
+1. Nguyên lý hoạt động cốt lõi (Hybrid Architecture):
+   - TUYỆT ĐỐI KHÔNG dùng AI (LLM) để tự tính toán các phép tính cộng trừ nhân chia 
+     cơ học kết cấu (vì AI dễ bị "ảo giác" số học).
+   - Luồng xử lý chuẩn:
+     [Người dùng nhập Input trên Web] 
+        --> [Python Engine tính toán chính xác bằng công thức toán học & bảng tra] 
+        --> [Xuất kết quả số học + Vẽ biểu đồ/mặt cắt bằng Matplotlib/Plotly] 
+        --> [Gửi kết quả số học sang Gemini API để AI nhận xét, tư vấn & viết thuyết minh].
+
+2. Công nghệ sử dụng (Tech Stack):
+   - Ngôn ngữ: Python 3.10+
+   - Web Framework: Streamlit (hoặc FastAPI + React tùy chọn, ưu tiên Streamlit để 
+     lên giao diện Dashboard nhanh, hỗ trợ sẵn biểu đồ và xuất file).
+   - Thư viện bắt buộc (`requirements.txt`):
+     streamlit
+     google-genai
+     pandas
+     numpy
+     matplotlib
+     plotly
+     openpyxl
+     python-docx
+     python-dotenv
+
+3. Cấu trúc thư mục mã nguồn (Source Code Structure):
+   SmartConstruct_Web_AI/
+   │
+   ├── app.py                      # Main Entry: Quản lý UI/UX, Sidebar và 6 Tabs chức năng
+   ├── config_data.py              # Database tĩnh: Bảng tra Bê tông, Cốt thép, Gió, Đất, Luật
+   ├── engines/
+   │   ├── structural_engine.py    # Module 1: Thuật toán Sàn, Dầm, Cột BTCT (TCVN 5574:2018)
+   │   ├── geotech_engine.py       # Module 2: Thuật toán Cơ học đất & Nền móng (TCVN 9362, 10304)
+   │   ├── load_fem_engine.py      # Module 3: Tải trọng Gió (TCVN 2737:2023) & Đọc file SAP2000/ETABS
+   │   ├── construction_boq.py     # Module 5 & 6: Cấp phối bê tông, Ván khuôn & Bóc tách khối lượng
+   │   └── plotter.py              # Module đồ họa: Vẽ mặt cắt dầm/cột, biểu đồ M-Q, đường cong đầm chặt
+   ├── ai_services/
+   │   ├── llm_assistant.py        # Kết nối Gemini API, xử lý RAG tra cứu TCVN & Pháp lý (Module 4)
+   │   └── report_generator.py     # Tự động điền số liệu và xuất file Thuyết minh (.docx / .md)
+   └── sample_data/                # Chứa file Excel mẫu xuất từ SAP2000/ETABS để test chức năng Upload
+
+
+================================================================================
+II. ĐẶC TẢ CƠ SỞ DỮ LIỆU TĨNH (`config_data.py`)
+================================================================================
+Developer cần khai báo các Python Dictionary chuẩn dưới đây để các hàm tính toán gọi ra:
+
+1. Bảng tra Bê tông (TCVN 5574:2018) - Đơn vị: MPa (N/mm2), E_b tính bằng MPa:
+   CONCRETE_DB = {
+       "B15": {"Rb": 8.5,  "Rbt": 0.75, "Eb": 24000},
+       "B20": {"Rb": 11.5, "Rbt": 0.90, "Eb": 27500},
+       "B25": {"Rb": 14.5, "Rbt": 1.05, "Eb": 30000},
+       "B30": {"Rb": 17.0, "Rbt": 1.15, "Eb": 32500},
+       "B35": {"Rb": 19.5, "Rbt": 1.30, "Eb": 34500},
+       "B40": {"Rb": 22.0, "Rbt": 1.40, "Eb": 36000}
+   }
+
+2. Bảng tra Cốt thép (TCVN 5574:2018) - Đơn vị: MPa:
+   REBAR_DB = {
+       "CB240-T": {"Rs": 210, "Rsc": 210, "Rsw": 170, "xi_R": 0.615},
+       "CB300-V": {"Rs": 260, "Rsc": 260, "Rsw": 210, "xi_R": 0.583},
+       "CB400-V": {"Rs": 350, "Rsc": 350, "Rsw": 280, "xi_R": 0.533},
+       "CB500-V": {"Rs": 435, "Rsc": 400, "Rsw": 300, "xi_R": 0.493}
+   }
+
+3. Bảng diện tích mặt cắt ngang thanh thép tròn (Đường kính d tính bằng mm -> Diện tích As1 tính bằng mm2):
+   REBAR_AREA = {
+       6: 28.3, 8: 50.3, 10: 78.5, 12: 113.1, 14: 153.9, 
+       16: 201.1, 18: 254.5, 20: 314.2, 22: 380.1, 25: 490.9, 28: 615.8, 32: 804.2
+   }
+
+4. Bảng tra Cấp phối cho 1m3 Bê tông (Định mức vật tư thông dụng):
+   MIX_PROPORTION_DB = {
+       "B15 (M200)": {"cement_kg": 285, "sand_m3": 0.475, "stone_m3": 0.855, "water_lit": 185},
+       "B20 (M250)": {"cement_kg": 325, "sand_m3": 0.455, "stone_m3": 0.870, "water_lit": 185},
+       "B25 (M300)": {"cement_kg": 375, "sand_m3": 0.435, "stone_m3": 0.880, "water_lit": 190},
+       "B30 (M400)": {"cement_kg": 445, "sand_m3": 0.400, "stone_m3": 0.875, "water_lit": 195}
+   }
+
+
+================================================================================
+III. ĐẶC TẢ CHI TIẾT 06 PHÂN HỆ CHỨC NĂNG (LOGIC & CÔNG THỨC CODE)
+================================================================================
+
+--------------------------------------------------------------------------------
+PHÂN HỆ 1: KẾT CẤU BÊ TÔNG CỐT THÉP (`engines/structural_engine.py`)
+--------------------------------------------------------------------------------
+Giao diện gồm 3 Sub-tabs nhỏ: [1.1 Bản sàn] - [1.2 Dầm chịu uốn] - [1.3 Cột chịu nén]
+
+1.1. Sub-tab Tính toán Bản sàn (Slab Design):
+   - INPUTS từ UI:
+     + Cạnh ngắn $L_1$ (m), Cạnh dài $L_2$ (m).
+     + Tĩnh tải tính toán $g_s$ ($\text{kN/m}^2$), Hoạt tải tính toán $p_s$ ($\text{kN/m}^2$).
+     + Chọn Bê tông (B15..B40), Cốt thép (CB240-T..CB500-V).
+   - LOGIC XỬ LÝ:
+     + Tính tỷ số $\alpha = L_2 / L_1$.
+     + Nếu $\alpha > 2.0$: Kết luận "Bản loại dầm (Làm việc 1 phương theo cạnh ngắn $L_1$)".
+       * Chiều dày sàn sơ bộ: $h_s = (1/35 \div 1/30) \times L_1 \times 1000$ (Làm tròn đến bội số của 10mm, tối thiểu 70mm).
+       * Tổng tải sàn: $q_s = g_s + p_s$ ($\text{kN/m}^2$). (Xét dải bản rộng $b = 1000\text{ mm}$).
+       * Mô-men nhịp biên & gối thứ 2: $M_{bien} = (q_s \times L_1^2) / 11$.
+       * Mô-men nhịp giữa & gối giữa: $M_{giua} = (q_s \times L_1^2) / 16$.
+     + Nếu $\alpha \le 2.0$: Kết luận "Bản kê 4 cạnh (Làm việc 2 phương)".
+       * Chiều dày sàn sơ bộ: $h_s = (1/45 \div 1/40) \times L_1 \times 1000$ (Làm tròn đến 10mm, tối thiểu 80mm).
+   - OUTPUTS: Hiển thị phân loại bản, chiều dày $h_s$ khuyên dùng, Mô-men và diện tích cốt thép sàn trên $1\text{m}$ bề rộng, khoảng cách bố trí thép $s = (A_{s1} \times 1000) / A_s$ (mm).
+
+1.2. Sub-tab Tính toán Dầm chữ nhật chịu uốn & cắt (Beam Design):
+   - INPUTS từ UI:
+     + Nhịp dầm $L$ (m), Bề rộng $b$ (mm), Chiều cao $h$ (mm), Lớp bảo vệ giả định $a$ (mm, mặc định 35-50mm).
+     + Mô-men uốn tính toán $M$ ($\text{kN}\cdot\text{m}$) và Lực cắt $Q$ ($\text{kN}$). (Cho phép người dùng tự nhập $M, Q$ hoặc bấm nút "Tự tính từ tải phân bố $q$").
+     + Bê tông ($R_b, R_{bt}$), Thép dọc ($R_s, \xi_R$), Thép đai ($R_{sw}$).
+     + Đường kính thanh thép dọc muốn chọn $d_{chọn}$ (mm, VD: 16, 18, 20, 22).
+   - LOGIC XỬ LÝ:
+     + Chiều cao làm việc: $h_0 = h - a$ (mm).
+     + Hệ số $\alpha_m$:
+       $$\alpha_m = \frac{M \times 10^6}{R_b \times b \times h_0^2}$$
+     + Hệ số giới hạn: $\alpha_R = \xi_R \times (1 - 0.5 \times \xi_R)$.
+     + Kiểm tra điều kiện hạn chế:
+       * Nếu $\alpha_m > \alpha_R$: Trả về cờ `status = "WARNING_OVER_REINFORCED"` (Cảnh báo đỏ: Tiết diện quá nhỏ, nguy cơ phá hoại giòn vùng bê tông chịu nén, yêu cầu tăng $h$ hoặc đặt cốt kép).
+       * Nếu $\alpha_m \le \alpha_R$:
+         $$\xi = 1 - \sqrt{1 - 2\alpha_m}$$
+         $$A_{s,yc} = \frac{\xi \times R_b \times b \times h_0}{R_s} \quad (\text{mm}^2)$$
+         $$\mu = \frac{A_{s,yc}}{b \times h_0} \times 100 \quad (\%)$$
+     + Tự động chọn số thanh thép:
+       * Diện tích 1 thanh: $A_{s1} = \text{REBAR\_AREA}[d_{chọn}]$.
+       * Số thanh cần thiết: $n_{thanh} = \text{ceil}(A_{s,yc} / A_{s1})$ (Tối thiểu 2 thanh).
+       * Tổng diện tích chọn: $A_{s,chon} = n_{thanh} \times A_{s1}$.
+   - ĐỒ HỌA (`plotter.py`):
+     + Dùng `matplotlib.patches` vẽ hình chữ nhật kích thước $b \times h$, vẽ hình chữ nhật cốt đai bên trong và vẽ $n_{thanh}$ hình tròn màu đỏ ở mép dưới tượng trưng cho thanh cốt thép dọc, ghi chú rõ kích thước trên hình.
+
+1.3. Sub-tab Cột chịu nén lệch tâm & Biểu đồ Tương tác / Độ cong (Column Analysis):
+   - INPUTS: Tiết diện cột $b \times h$ (mm), Chiều dài tính toán $L_0$ (mm), Lực dọc $N$ (kN), Mô-men $M$ ($\text{kN}\cdot\text{m}$), Bê tông, Cốt thép.
+   - LOGIC XỬ LÝ:
+     + Tính độ lệch tâm tĩnh học $e_1 = (M \times 10^3) / N$ (mm), độ lệch tâm ngẫu nhiên $e_a = \max(L_0/600, h/30, 10\text{ mm})$.
+     + Tính hệ số uốn dọc $\eta$ và kiểm tra khả năng chịu lực của tiết diện cột đối xứng.
+     + Vẽ sơ bộ đường cong tương tác $P - M$ (hoặc quan hệ Mô-men - Độ cong $M - \phi$) bằng Plotly để người dùng thấy điểm làm việc $(M, N)$ nằm trong vùng an toàn.
+
+--------------------------------------------------------------------------------
+PHÂN HỆ 2: ĐỊA KỸ THUẬT, CƠ HỌC ĐẤT & NỀN MÓNG (`engines/geotech_engine.py`)
+--------------------------------------------------------------------------------
+Giao diện gồm 2 Sub-tabs: [2.1 Thí nghiệm Đầm chặt đất] - [2.2 Thiết kế Móng đơn & Móng cọc]
+
+2.1. Sub-tab Xử lý Thí nghiệm Đầm chặt đất tiêu chuẩn (Soil Compaction Curve):
+   - INPUTS: Cho phép người dùng nhập bảng gồm 5-6 điểm thí nghiệm: Độ ẩm $W_i (\%)$ và Khối lượng thể tích khô $\gamma_{d,i} (\text{g/cm}^3$ hoặc $\text{kN/m}^3)$, Khối lượng riêng hạt đất $\Delta$ (VD: 2.68).
+   - LOGIC XỬ LÝ:
+     + Dùng `numpy.polyfit(W, gamma_d, 2)` để hồi quy đa thức bậc 2: $y = a \cdot x^2 + b \cdot x + c$.
+     + Tìm đỉnh Parabol:
+       * Độ ẩm tốt nhất: $W_{opt} = -b / (2a)$.
+       * Khối lượng thể tích khô lớn nhất: $\gamma_{d,max} = a \cdot W_{opt}^2 + b \cdot W_{opt} + c$.
+     + Vẽ đồ thị đường cong đầm chặt và đường bão hòa $S_r = 1.0$ trên cùng 1 hệ trục tọa độ, đánh dấu điểm đỉnh $(W_{opt}, \gamma_{d,max})$.
+
+2.2. Sub-tab Thiết kế Móng đơn dưới cột (Isolated Footing Design):
+   - INPUTS: Tải trọng tiêu chuẩn tại chân cột ($N_{0,tc}, M_{0,tc}, Q_{0,tc}$), Chiều sâu chôn móng $h_m$ (m), Cường độ tiêu chuẩn của đất nền $R_{tc}$ (kPa), Bê tông & Thép móng.
+   - LOGIC XỬ LÝ:
+     + Sơ bộ diện tích đáy móng: $F_{sb} = \frac{N_{0,tc}}{R_{tc} - \gamma_{tb} \times h_m}$ (với $\gamma_{tb} = 20\text{ kN/m}^3$).
+     + Chọn kích thước đáy móng $B_m \times L_m$ (làm tròn chẵn 0.1m).
+     + Tính áp lực tiêu chuẩn đáy móng: $p_{tb}, p_{max}, p_{min}$.
+     + Kiểm tra 2 điều kiện: $p_{tb} \le R_{tc}$ và $p_{max} \le 1.2 \times R_{tc}$.
+     + Kiểm tra chọc thủng đài móng và tính cốt thép đáy móng theo 2 phương.
+
+--------------------------------------------------------------------------------
+PHÂN HỆ 3: TẢI TRỌNG GIÓ & CẦU NỐI SAP2000/ETABS (`engines/load_fem_engine.py`)
+--------------------------------------------------------------------------------
+Giao diện gồm 2 Sub-tabs: [3.1 Tải trọng Gió nhà nhiều tầng] - [3.2 Lọc Nội lực SAP2000/ETABS]
+
+3.1. Sub-tab Tính Tải trọng Gió theo TCVN 2737:2023:
+   - INPUTS: Chọn Vùng gió (I, II, III, IV, V -> suy ra $W_0$ từ $0.65$ đến $1.85\text{ kN/m}^2$), Dạng địa hình (A, B, C), Số tầng nhà (VD: 10 tầng), Chiều cao mỗi tầng $h_t$ (m), Bề rộng đón gió $B$ (m).
+   - LOGIC XỬ LÝ:
+     + Tạo bảng Pandas DataFrame chạy từ Tầng 1 đến Tầng $N$.
+     + Tính cao độ $Z_i$ của từng tầng, nội suy hệ số kể đến sự thay đổi áp lực gió theo độ cao $k(z_e)$, hệ số khí động $c$, hệ số giật $G_f$.
+     + Tính lực gió tập trung tác dụng vào từng sàn tầng $W_i$ (kN) và vẽ biểu đồ phân bố lực gió dọc theo chiều cao nhà.
+
+3.2. Sub-tab Đọc và Lọc Tổ hợp Nội lực từ file Excel SAP2000/ETABS:
+   - INPUTS: Nút Upload file `.xlsx` hoặc `.csv` (`st.file_uploader`) chứa bảng xuất "Element Forces - Beams" hoặc "Element Forces - Columns" từ SAP2000/ETABS.
+   - LOGIC XỬ LÝ:
+     + Dùng `pandas.read_excel()` đọc bảng dữ liệu.
+     + Tự động lọc theo tên phần tử (Frame/Unique Name) để tìm ra:
+       1. Cặp nguy hiểm 1: $|M_3|_{max}$ và $P$ tương ứng (tại Gối và tại Nhịp).
+       2. Cặp nguy hiểm 2: $|P|_{max}$ (Nén lớn nhất) và $M_2, M_3$ tương ứng.
+       3. Lực cắt lớn nhất $|V_2|_{max}$.
+     + Cho phép bấm nút "Đẩy nội lực này sang Phân hệ 1 để tính thép ngay".
+
+--------------------------------------------------------------------------------
+PHÂN HỆ 4: CHATBOT TRA CỨU TCVN, PHÁP LÝ & BIM (`ai_services/llm_assistant.py`)
+--------------------------------------------------------------------------------
+   - NỀN TẢNG KIẾN THỨC NẠP VÀO SYSTEM PROMPT:
+     + Tiêu chuẩn kỹ thuật: TCVN 5574:2018 (BTCT), TCVN 2737:2023 (Tải trọng), TCVN 9362:2012 (Nền móng), TCVN 4453:1995 (Thi công & Nghiệm thu).
+     + Pháp lý Xây dựng mới nhất: Luật Xây dựng hiện hành, Nghị định 206/2026/NĐ-CP và Nghị định 217/2026/NĐ-CP (Quy định chi tiết về phân cấp công trình, cấp giấy phép xây dựng, quản lý dự án, quản lý chi phí/hợp đồng và lộ trình áp dụng BIM bắt buộc).
+   - TÍNH NĂNG GIAO DIỆN:
+     + Giao diện khung Chat (`st.chat_message`) lưu lịch sử hội thoại trong `st.session_state`.
+     + Tích hợp bộ công cụ "Kiểm tra nhanh Pháp lý & BIM": Người dùng chọn Cấp công trình (Đặc biệt, I, II, III, IV) và Nguồn vốn (Đầu tư công, Vốn nhà nước ngoài đầu tư công, Vốn khác) -> Hệ thống trả lời ngay có bắt buộc áp dụng BIM hay không và điều kiện miễn giấy phép xây dựng.
+     + Tích hợp chế độ "Trắc nghiệm Ôn tập Pháp luật Xây dựng": Hiển thị câu hỏi trắc nghiệm 4 đáp án A, B, C, D kèm giải thích căn cứ pháp lý chi tiết.
+
+--------------------------------------------------------------------------------
+PHÂN HỆ 5 & 6: KỸ THUẬT THI CÔNG, BÓC TÁCH KHỐI LƯỢNG & XUẤT THUYẾT MINH
+(`engines/construction_boq.py` & `ai_services/report_generator.py`)
+--------------------------------------------------------------------------------
+5.1. Tính Cấp phối vật tư & Kiểm tra Ván khuôn:
+   - Nhập thể tích bê tông cần đổ $V$ ($\text{m}^3$) và Mác/Cấp bê tông -> Nhân với `MIX_PROPORTION_DB` để xuất ra tổng số bao Xi măng (50kg/bao), số khối Cát ($\text{m}^3$), Đá ($\text{m}^3$) và Nước (lít).
+   - Tra cứu thời gian tháo dỡ cốp pha tối thiểu theo TCVN 4453:1995.
+
+5.2. Bóc tách khối lượng & Thống kê cốt thép (Auto-BOQ):
+   - Nhập danh sách cấu kiện (Số lượng, đường kính $\Phi$, chiều dài 1 thanh $L_i$, số thanh) -> Tự động tính trọng lượng riêng từng loại đường kính theo công thức:
+     $$g_i = \frac{\pi \times d^2}{4} \times 7.85 \times 10^{-3} \quad (\text{kg/m})$$
+   - Xuất bảng tổng hợp khối lượng thép (kg) và tải về file Excel (`.xlsx`).
+
+5.3. Tự động xuất File Thuyết minh Đồ án Word (`.docx`):
+   - Sử dụng thư viện `python-docx`.
+   - Khi người dùng bấm nút "Tải File Thuyết Minh Đồ Án (.docx)", hệ thống tự động gom toàn bộ thông số đã tính ở Phân hệ 1 & 2, chèn vào các đề mục chuẩn (1. Số liệu đầu vào -> 2. Chọn vật liệu -> 3. Tính toán nội lực -> 4. Tính toán cốt thép -> 5. Nhận xét của AI) và trả về file `.docx` qua `st.download_button`.
+
+
+================================================================================
+IV. YÊU CẦU VỀ GIAO DIỆN (UI/UX) & XỬ LÝ LỖI DÀNH CHO DEVELOPER
+================================================================================
+1. Phong cách thiết kế (Design System):
+   - Giao diện chuẩn "Engineering Dashboard": Tông màu chủ đạo Xanh đậm kỹ thuật (#1E3A8A), Xám sáng (#F8FAFC) và Cam cảnh báo (#EA580C).
+   - Sử dụng `st.columns`, `st.metric`, `st.expander` để giao diện gọn gàng, không bị rối mắt dù có nhiều công thức.
+   - Mọi công thức toán học hiển thị trên màn hình Web đều phải render bằng chuẩn LaTeX của Streamlit (`st.latex()`).
+
+2. Chế độ "Demo 1-Click" (Rất quan trọng khi đi thi):
+   - Trên Sidebar phải có nút bấm **"⚡ Nạp Bộ Số Liệu Mẫu (Đồ Án Thực Tế)"**.
+   - Khi bấm nút này, toàn bộ các ô Input ở cả 6 Phân hệ tự động điền sẵn bộ số liệu chuẩn của một công trình thực tế (VD: Nhà khung BTCT 10 tầng tại Đà Nẵng, sàn $2.4 \times 6.2\text{ m}$, dầm $220 \times 450\text{ mm}$, bê tông B25, thép CB400-V) để người thuyết trình hoặc Ban Giám khảo chỉ cần bấm 1 nút là thấy ngay toàn bộ biểu đồ và kết quả mà không mất thời gian gõ tay từng số.
+
+3. Xử lý khi chưa có API Key (Fallback Mode):
+   - Nếu người dùng chưa nhập Gemini API Key hoặc mất kết nối mạng, toàn bộ các Phân hệ tính toán toán học, vẽ biểu đồ mặt cắt và xuất bảng Excel/Word vẫn phải HOẠT ĐỘNG BÌNH THƯỜNG 100%, đồng thời hiển thị nhận xét mẫu từ hệ thống Rule-based để không bao giờ bị văng lỗi (Crash app) khi đang chấm thi.
+================================================================================
