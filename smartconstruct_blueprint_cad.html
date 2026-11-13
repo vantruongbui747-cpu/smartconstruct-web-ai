@@ -1,0 +1,2370 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SmartConstruct Web AI • Hệ Thống Vẽ Bản Vẽ Kỹ Thuật & Tra Cứu Kết Cấu</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- Three.js & OrbitControls cho Không Gian 3D BIM Chuyên Nghiệp -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    <style>
+        :root {
+            --bg-color: #070B14;
+            --surface-color: #0F172A;
+            --surface-border: rgba(14, 165, 233, 0.28);
+            --dtu-crimson: #8B1520;
+            --dtu-crimson-glow: rgba(139, 21, 32, 0.45);
+            --dtu-gold: #C5A059;
+            --dtu-gold-light: #E0C17E;
+            --cyan-glow: #38BDF8;
+            --text-main: #F8FAFC;
+            --text-muted: #94A3B8;
+            --accent-amber: #F59E0B;
+            --accent-green: #10B981;
+            --accent-red: #EF4444;
+            --grid-line: rgba(255, 255, 255, 0.035);
+        }
+
+        body.light-cad-mode {
+            --bg-color: #F1F5F9;
+            --surface-color: #FFFFFF;
+            --surface-border: #CBD5E1;
+            --text-main: #0F172A;
+            --text-muted: #475569;
+            --cyan-glow: #0284C7;
+            --grid-line: rgba(0, 0, 0, 0.05);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            background-image: 
+                radial-gradient(circle at 10% 15%, var(--dtu-crimson-glow) 0%, transparent 40%),
+                radial-gradient(circle at 90% 85%, rgba(14, 165, 233, 0.15) 0%, transparent 45%),
+                linear-gradient(to right, var(--grid-line) 1px, transparent 1px),
+                linear-gradient(to bottom, var(--grid-line) 1px, transparent 1px);
+            background-size: 100% 100%, 100% 100%, 25px 25px, 25px 25px;
+            color: var(--text-main);
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            min-height: 100vh;
+            padding: 20px;
+            transition: background 0.3s ease;
+        }
+
+        .container {
+            max-width: 1440px;
+            margin: 0 auto;
+        }
+
+        /* Top Banner & Header */
+        header.header-card {
+            background: linear-gradient(135deg, rgba(139, 21, 32, 0.9) 0%, rgba(15, 23, 42, 0.95) 100%);
+            border: 1px solid rgba(197, 160, 89, 0.4);
+            border-radius: 16px;
+            padding: 20px 28px;
+            margin-bottom: 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 16px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
+        }
+
+        .header-title-group h1 {
+            font-size: 1.85rem;
+            font-weight: 800;
+            background: linear-gradient(90deg, #FFFFFF 0%, var(--dtu-gold-light) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 4px;
+        }
+
+        .header-title-group p {
+            color: var(--text-muted);
+            font-size: 0.9rem;
+        }
+
+        .header-badge {
+            background: rgba(197, 160, 89, 0.15);
+            border: 1px solid var(--dtu-gold);
+            color: var(--dtu-gold-light);
+            padding: 6px 14px;
+            border-radius: 30px;
+            font-size: 0.8rem;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .controls-top {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+        }
+
+        .btn {
+            background: rgba(15, 23, 42, 0.8);
+            color: #F8FAFC;
+            border: 1px solid rgba(14, 165, 233, 0.4);
+            padding: 8px 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            transition: all 0.2s;
+        }
+
+        .btn:hover {
+            border-color: var(--cyan-glow);
+            box-shadow: 0 0 12px rgba(56, 189, 248, 0.4);
+            transform: translateY(-1px);
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--dtu-crimson) 0%, #A31B27 100%);
+            border-color: var(--dtu-gold);
+            color: #FFFFFF;
+        }
+
+        .btn-primary:hover {
+            box-shadow: 0 0 15px rgba(197, 160, 89, 0.5);
+        }
+
+        /* Navigation Tabs */
+        .tab-bar {
+            display: flex;
+            gap: 10px;
+            background: var(--surface-color);
+            padding: 10px;
+            border-radius: 12px;
+            border: 1px solid var(--surface-border);
+            margin-bottom: 24px;
+            overflow-x: auto;
+        }
+
+        .tab-btn {
+            background: transparent;
+            border: none;
+            color: var(--text-muted);
+            padding: 10px 18px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 700;
+            font-size: 0.9rem;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            white-space: nowrap;
+            transition: all 0.25s;
+        }
+
+        .tab-btn:hover {
+            color: #FFFFFF;
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .tab-btn.active {
+            background: linear-gradient(135deg, var(--dtu-crimson) 0%, #A31B27 100%);
+            color: #FFFFFF;
+            box-shadow: 0 4px 14px rgba(139, 21, 32, 0.5);
+        }
+
+        /* Tab Content Layout */
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+            animation: fadeIn 0.3s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(6px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .grid-layout {
+            display: grid;
+            grid-template-columns: 440px 1fr;
+            gap: 24px;
+        }
+
+        @media (max-width: 1024px) {
+            .grid-layout {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* Left Panel */
+        .panel {
+            background: var(--surface-color);
+            border: 1px solid var(--surface-border);
+            border-radius: 16px;
+            padding: 22px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.4);
+        }
+
+        .panel-header {
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+            padding-bottom: 12px;
+            margin-bottom: 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .panel-header h3 {
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: var(--cyan-glow);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .form-group {
+            margin-bottom: 14px;
+        }
+
+        .form-group label {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--text-muted);
+            margin-bottom: 6px;
+        }
+
+        .form-group label span.value-badge {
+            color: var(--accent-amber);
+            font-family: 'JetBrains Mono', monospace;
+            font-weight: 700;
+        }
+
+        .form-control, input[type="text"], input[type="number"], select {
+            width: 100%;
+            padding: 9px 12px;
+            background: rgba(7, 11, 20, 0.8);
+            border: 1px solid rgba(14, 165, 233, 0.3);
+            border-radius: 8px;
+            color: var(--text-main);
+            font-size: 0.9rem;
+            font-family: inherit;
+            outline: none;
+            transition: all 0.2s;
+        }
+
+        .form-control:focus, select:focus {
+            border-color: var(--cyan-glow);
+            box-shadow: 0 0 8px rgba(56, 189, 248, 0.3);
+        }
+
+        input[type="range"] {
+            width: 100%;
+            height: 6px;
+            accent-color: var(--cyan-glow);
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 4px;
+            outline: none;
+        }
+
+        .metric-cards {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+            margin-top: 16px;
+        }
+
+        .metric-box {
+            background: rgba(7, 11, 20, 0.6);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 10px;
+            padding: 12px;
+        }
+
+        .metric-label {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            margin-bottom: 4px;
+        }
+
+        .metric-val {
+            font-size: 1.2rem;
+            font-weight: 800;
+            font-family: 'JetBrains Mono', monospace;
+            color: #FFFFFF;
+        }
+
+        .metric-sub {
+            font-size: 0.72rem;
+            color: var(--accent-green);
+            margin-top: 2px;
+        }
+
+        /* Right Panel: Technical Drawing Canvas */
+        .drawing-canvas-wrapper {
+            background: #0B1120;
+            border: 1px solid rgba(14, 165, 233, 0.4);
+            border-radius: 16px;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.6);
+            min-height: 580px;
+        }
+
+        .drawing-canvas-toolbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 14px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .canvas-title {
+            font-weight: 700;
+            font-size: 1rem;
+            color: var(--cyan-glow);
+            letter-spacing: 0.5px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        /* Switch 2D CAD vs 3D BIM */
+        .view-mode-toggle {
+            display: flex;
+            background: rgba(15, 23, 42, 0.9);
+            border: 1px solid rgba(56, 189, 248, 0.4);
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .view-mode-btn {
+            background: transparent;
+            border: none;
+            color: var(--text-muted);
+            padding: 6px 14px;
+            font-size: 0.8rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .view-mode-btn.active {
+            background: linear-gradient(135deg, #0284C7 0%, #38BDF8 100%);
+            color: #070B14;
+        }
+
+        .canvas-body {
+            flex: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+            position: relative;
+            min-height: 440px;
+            border-radius: 8px;
+            background: #070B14;
+        }
+
+        svg.blueprint-svg {
+            width: 100%;
+            height: 100%;
+            max-height: 500px;
+            background: #070B14;
+        }
+
+        /* 3D WebGL Viewport Canvas */
+        .threejs-viewport {
+            width: 100%;
+            height: 100%;
+            position: absolute;
+            top: 0;
+            left: 0;
+            outline: none;
+            display: none;
+        }
+
+        .threejs-overlay-tips {
+            position: absolute;
+            bottom: 12px;
+            left: 14px;
+            background: rgba(15, 23, 42, 0.85);
+            border: 1px solid rgba(56, 189, 248, 0.3);
+            border-radius: 6px;
+            padding: 6px 12px;
+            font-size: 0.75rem;
+            color: var(--cyan-glow);
+            font-family: 'JetBrains Mono', monospace;
+            pointer-events: none;
+            z-index: 10;
+        }
+
+        .threejs-controls-overlay {
+            position: absolute;
+            top: 12px;
+            right: 14px;
+            display: flex;
+            gap: 8px;
+            z-index: 10;
+        }
+
+        /* Title Block */
+        .title-block {
+            margin-top: 14px;
+            border: 1px solid rgba(197, 160, 89, 0.5);
+            background: rgba(15, 23, 42, 0.9);
+            border-radius: 6px;
+            display: grid;
+            grid-template-columns: 2fr 1.5fr 1fr 1fr;
+            font-size: 0.75rem;
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        .title-block div {
+            padding: 6px 10px;
+            border-right: 1px solid rgba(197, 160, 89, 0.3);
+        }
+
+        .title-block div:last-child {
+            border-right: none;
+        }
+
+        .title-block .label {
+            color: var(--dtu-gold);
+            font-weight: 700;
+            display: block;
+            margin-bottom: 2px;
+        }
+
+        /* Tables & Database Styles */
+        .table-responsive {
+            overflow-x: auto;
+            margin-top: 14px;
+            border-radius: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        table.cad-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.85rem;
+            text-align: left;
+        }
+
+        table.cad-table th {
+            background: rgba(30, 41, 59, 0.9);
+            color: var(--cyan-glow);
+            padding: 10px 14px;
+            font-weight: 700;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        table.cad-table td {
+            padding: 9px 14px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+            color: var(--text-main);
+        }
+
+        table.cad-table tr:hover td {
+            background: rgba(255, 255, 255, 0.03);
+        }
+
+        .badge-status {
+            padding: 3px 8px;
+            border-radius: 4px;
+            font-weight: 700;
+            font-size: 0.75rem;
+        }
+
+        .badge-ok {
+            background: rgba(16, 185, 129, 0.2);
+            color: #34D399;
+            border: 1px solid #10B981;
+        }
+
+        .badge-warn {
+            background: rgba(245, 158, 11, 0.2);
+            color: #FBBF24;
+            border: 1px solid #F59E0B;
+        }
+
+        .badge-danger {
+            background: rgba(239, 68, 68, 0.2);
+            color: #F87171;
+            border: 1px solid #EF4444;
+        }
+
+        footer {
+            margin-top: 40px;
+            text-align: center;
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            padding: 16px;
+            border-top: 1px solid rgba(255, 255, 255, 0.08);
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <!-- Header Hero -->
+    <header class="header-card">
+        <div class="header-title-group">
+            <div style="color: var(--dtu-gold); font-size: 0.85rem; font-weight: 800; letter-spacing: 2px;">
+                TRƯỜNG ĐẠI HỌC DUY TÂN • KHOA XÂY DỰNG
+            </div>
+            <h1>SMARTCONSTRUCT 3D BIM & BLUEPRINT CAD</h1>
+            <p>Hệ Thống Trợ Lý Kỹ Thuật, Tra Cứu TCVN & Mô Hình Hóa 3D/2D Kết Cấu Xây Dựng Thông Minh</p>
+        </div>
+        <div class="controls-top">
+            <div class="header-badge">
+                <span>⚡ TCVN 5574:2018 & 2737:2023</span>
+            </div>
+            <button class="btn" onclick="toggleTheme()" id="btnTheme">
+                🎨 Giao diện: Cyber CAD
+            </button>
+            <button class="btn btn-primary" onclick="window.print()">
+                🖨️ In / Xuất PDF
+            </button>
+        </div>
+    </header>
+
+    <!-- Navigation Tabs -->
+    <div class="tab-bar">
+        <button class="tab-btn active" onclick="switchTab('beamTab', this)">
+            📐 1. Dầm BTCT (2D / 3D BIM)
+        </button>
+        <button class="tab-btn" onclick="switchTab('columnTab', this)">
+            🏛️ 2. Cột BTCT (2D / 3D BIM)
+        </button>
+        <button class="tab-btn" onclick="switchTab('footingTab', this)">
+            🧱 3. Móng Đơn (2D / 3D BIM)
+        </button>
+        <button class="tab-btn" onclick="switchTab('slabTab', this)">
+            🔲 4. Bản Sàn BTCT
+        </button>
+        <button class="tab-btn" onclick="switchTab('windTab', this)">
+            🌪️ 5. Tháp Tải Gió Nhà Cao Tầng
+        </button>
+        <button class="tab-btn" onclick="switchTab('proctorTab', this)">
+            🧪 6. Đường Cong Đầm Chặt Đất
+        </button>
+        <button class="tab-btn" onclick="switchTab('boqTab', this)">
+            📋 7. Bóc Tách Khối Lượng & Cấp Phối
+        </button>
+        <button class="tab-btn" onclick="switchTab('tcvnDbTab', this)">
+            📚 8. Cơ Sở Dữ Liệu TCVN Đầy Đủ
+        </button>
+    </div>
+
+    <!-- =================================================================== -->
+    <!-- TAB 1: DẦM CHỮ NHẬT BTCT (2D & 3D BIM) -->
+    <!-- =================================================================== -->
+    <div id="beamTab" class="tab-content active">
+        <div class="grid-layout">
+            <div class="panel">
+                <div class="panel-header">
+                    <h3>⚙️ Tham Số Thiết Kế Dầm</h3>
+                    <span class="badge-status badge-ok" id="beamStatusBadge">ĐẠT TCVN 5574</span>
+                </div>
+
+                <div class="form-group">
+                    <label>Bề rộng dầm b (mm): <span class="value-badge" id="lbl_b">220 mm</span></label>
+                    <input type="range" id="beam_b" min="150" max="500" step="10" value="220" oninput="updateBeam()">
+                </div>
+                <div class="form-group">
+                    <label>Chiều cao dầm h (mm): <span class="value-badge" id="lbl_h">450 mm</span></label>
+                    <input type="range" id="beam_h" min="200" max="1200" step="50" value="450" oninput="updateBeam()">
+                </div>
+                <div class="form-group">
+                    <label>Mô-men uốn tính toán M (kN·m): <span class="value-badge" id="lbl_M">135 kN·m</span></label>
+                    <input type="range" id="beam_M" min="10" max="600" step="5" value="135" oninput="updateBeam()">
+                </div>
+                <div class="form-group">
+                    <label>Cấp độ bền Bê tông:</label>
+                    <select id="beam_concrete" onchange="updateBeam()">
+                        <option value="B15">B15 (Rb = 8.5 MPa, Rbt = 0.75 MPa)</option>
+                        <option value="B20">B20 (Rb = 11.5 MPa, Rbt = 0.90 MPa)</option>
+                        <option value="B25" selected>B25 (Rb = 14.5 MPa, Rbt = 1.05 MPa)</option>
+                        <option value="B30">B30 (Rb = 17.0 MPa, Rbt = 1.15 MPa)</option>
+                        <option value="B35">B35 (Rb = 19.5 MPa, Rbt = 1.30 MPa)</option>
+                        <option value="B40">B40 (Rb = 22.0 MPa, Rbt = 1.40 MPa)</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Nhóm cốt thép chủ:</label>
+                    <select id="beam_steel" onchange="updateBeam()">
+                        <option value="CB240-T">CB240-T (Rs = 210 MPa)</option>
+                        <option value="CB300-V">CB300-V (Rs = 260 MPa)</option>
+                        <option value="CB400-V" selected>CB400-V (Rs = 350 MPa, ξR = 0.533)</option>
+                        <option value="CB500-V">CB500-V (Rs = 435 MPa, ξR = 0.493)</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Đường kính thép dọc mong muốn:</label>
+                    <select id="beam_dia" onchange="updateBeam()">
+                        <option value="16">Ф16 (As1 = 201.1 mm²)</option>
+                        <option value="18" selected>Ф18 (As1 = 254.5 mm²)</option>
+                        <option value="20">Ф20 (As1 = 314.2 mm²)</option>
+                        <option value="22">Ф22 (As1 = 380.1 mm²)</option>
+                        <option value="25">Ф25 (As1 = 490.9 mm²)</option>
+                    </select>
+                </div>
+
+                <div class="metric-cards">
+                    <div class="metric-box">
+                        <div class="metric-label">Hệ số tính toán αm</div>
+                        <div class="metric-val" id="beam_alpha_m">0.245</div>
+                        <div class="metric-sub" id="beam_alpha_R">αR = 0.391</div>
+                    </div>
+                    <div class="metric-box">
+                        <div class="metric-label">Diện tích As yêu cầu</div>
+                        <div class="metric-val" id="beam_As_req">998 mm²</div>
+                        <div class="metric-sub" id="beam_mu_pct">μ = 1.10%</div>
+                    </div>
+                    <div class="metric-box">
+                        <div class="metric-label">Bố trí thép thực tế</div>
+                        <div class="metric-val" id="beam_rebar_sel" style="color: var(--accent-amber);">4Ф18</div>
+                        <div class="metric-sub" id="beam_As_act">As thực = 1018 mm²</div>
+                    </div>
+                    <div class="metric-box">
+                        <div class="metric-label">Chiều cao vùng nén x</div>
+                        <div class="metric-val" id="beam_comp_x">122 mm</div>
+                        <div class="metric-sub" id="beam_xi_val">ξ = 0.294</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Drawing Canvas (2D / 3D BIM) -->
+            <div class="drawing-canvas-wrapper">
+                <div class="drawing-canvas-toolbar">
+                    <div class="canvas-title">
+                        <span>BẢN VẼ DẦM BÊ TÔNG CỐT THÉP</span>
+                    </div>
+                    <div style="display: flex; gap: 10px; align-items: center;">
+                        <div class="view-mode-toggle">
+                            <button class="view-mode-btn active" id="btnBeam2D" onclick="setBeamViewMode('2d')">📐 2D CAD</button>
+                            <button class="view-mode-btn" id="btnBeam3D" onclick="setBeamViewMode('3d')">🧊 3D BIM</button>
+                        </div>
+                        <button class="btn" onclick="downloadSvg('beamSvg', 'Mat_Cat_Dam_BTCT.svg')">💾 Tải SVG</button>
+                    </div>
+                </div>
+                <div class="canvas-body" id="beamCanvasBox">
+                    <div id="beamSvgContainer" style="width: 100%; height: 100%; display: flex; align-items: center; justify-content: center;"></div>
+                    <div id="beam3DContainer" class="threejs-viewport">
+                        <div class="threejs-overlay-tips">🖱️ Giữ chuột trái: Xoay 360° | Cuộn: Thu/Phóng | Chuột phải: Di chuyển</div>
+                        <div class="threejs-controls-overlay">
+                            <button class="btn" style="padding: 4px 10px; font-size: 0.75rem;" onclick="resetBeam3DCamera()">🔄 Reset Góc Nhìn</button>
+                        </div>
+                    </div>
+                </div>
+                <!-- Title block -->
+                <div class="title-block">
+                    <div><span class="label">CÔNG TRÌNH:</span> ĐỒ ÁN BÊ TÔNG CỐT THÉP 1</div>
+                    <div><span class="label">BẢN VẼ:</span> MẶT CẮT & 3D DẦM B101</div>
+                    <div><span class="label">TỶ LỆ:</span> 1:20</div>
+                    <div><span class="label">ĐƠN VỊ:</span> KHOA XD - DTU</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- =================================================================== -->
+    <!-- TAB 2: CỘT CHỊU NÉN LỆCH TÂM (2D & 3D BIM) -->
+    <!-- =================================================================== -->
+    <div id="columnTab" class="tab-content">
+        <div class="grid-layout">
+            <div class="panel">
+                <div class="panel-header">
+                    <h3>⚙️ Tham Số Thiết Kế Cột</h3>
+                    <span class="badge-status badge-ok" id="colStatusBadge">AN TOÀN CHỊU LỰC</span>
+                </div>
+                <div class="form-group">
+                    <label>Bề rộng cột b (mm): <span class="value-badge" id="lbl_col_b">300 mm</span></label>
+                    <input type="range" id="col_b" min="200" max="800" step="50" value="300" oninput="updateColumn()">
+                </div>
+                <div class="form-group">
+                    <label>Chiều cao tiết diện h (mm): <span class="value-badge" id="lbl_col_h">400 mm</span></label>
+                    <input type="range" id="col_h" min="200" max="1000" step="50" value="400" oninput="updateColumn()">
+                </div>
+                <div class="form-group">
+                    <label>Lực nén dọc tính toán N (kN): <span class="value-badge" id="lbl_col_N">1850 kN</span></label>
+                    <input type="range" id="col_N" min="100" max="6000" step="50" value="1850" oninput="updateColumn()">
+                </div>
+                <div class="form-group">
+                    <label>Mô-men uốn tính toán M (kN·m): <span class="value-badge" id="lbl_col_M">95 kN·m</span></label>
+                    <input type="range" id="col_M" min="10" max="500" step="5" value="95" oninput="updateColumn()">
+                </div>
+                <div class="form-group">
+                    <label>Chiều dài tính toán L0 (mm): <span class="value-badge" id="lbl_col_L0">3600 mm</span></label>
+                    <input type="range" id="col_L0" min="2000" max="7000" step="100" value="3600" oninput="updateColumn()">
+                </div>
+
+                <div class="metric-cards">
+                    <div class="metric-box">
+                        <div class="metric-label">Độ lệch tâm tính toán e</div>
+                        <div class="metric-val" id="col_e_calc">86.4 mm</div>
+                        <div class="metric-sub" id="col_eta">Hệ số η = 1.05</div>
+                    </div>
+                    <div class="metric-box">
+                        <div class="metric-label">Độ mảnh λ = L0 / i</div>
+                        <div class="metric-val" id="col_slender">31.2</div>
+                        <div class="metric-sub">Giới hạn λ &le; 120</div>
+                    </div>
+                    <div class="metric-box">
+                        <div class="metric-label">Khả năng nén đúng tâm Pmax</div>
+                        <div class="metric-val" id="col_p_max">2580 kN</div>
+                        <div class="metric-sub" id="col_p_ratio">N/Pmax = 71.7%</div>
+                    </div>
+                    <div class="metric-box">
+                        <div class="metric-label">Bố trí thép chu vi</div>
+                        <div class="metric-val" id="col_rebar_str" style="color: var(--accent-amber);">6Ф20</div>
+                        <div class="metric-sub">μt = 1.57%</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Drawing Canvas (2D / 3D BIM) -->
+            <div class="drawing-canvas-wrapper">
+                <div class="drawing-canvas-toolbar">
+                    <div class="canvas-title">BẢN VẼ CỘT & ĐƯỜNG BAO TƯƠNG TÁC P-M</div>
+                    <div style="display: flex; gap: 10px; align-items: center;">
+                        <div class="view-mode-toggle">
+                            <button class="view-mode-btn active" id="btnCol2D" onclick="setColViewMode('2d')">📐 2D CAD</button>
+                            <button class="view-mode-btn" id="btnCol3D" onclick="setColViewMode('3d')">🧊 3D BIM</button>
+                        </div>
+                        <button class="btn" onclick="downloadSvg('colSvg', 'Mat_Cat_Cot_BTCT.svg')">💾 Tải SVG</button>
+                    </div>
+                </div>
+                <div class="canvas-body" id="colCanvasBox">
+                    <div id="colSvgContainer" style="width: 100%; height: 100%; display: flex; align-items: center; justify-content: center;"></div>
+                    <div id="col3DContainer" class="threejs-viewport">
+                        <div class="threejs-overlay-tips">🖱️ Giữ chuột trái: Xoay 360° | Cuộn: Thu/Phóng | Chuột phải: Di chuyển</div>
+                        <div class="threejs-controls-overlay">
+                            <button class="btn" style="padding: 4px 10px; font-size: 0.75rem;" onclick="resetCol3DCamera()">🔄 Reset Góc Nhìn</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="title-block">
+                    <div><span class="label">CÔNG TRÌNH:</span> NHÀ VĂN PHÒNG 10 TẦNG</div>
+                    <div><span class="label">BẢN VẼ:</span> MẶT CẮT CỘT C1 & 3D BIM</div>
+                    <div><span class="label">TỶ LỆ:</span> 1:20</div>
+                    <div><span class="label">ĐƠN VỊ:</span> KHOA XD - DTU</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- =================================================================== -->
+    <!-- TAB 3: MÓNG ĐƠN DƯỚI CỘT (2D & 3D BIM) -->
+    <!-- =================================================================== -->
+    <div id="footingTab" class="tab-content">
+        <div class="grid-layout">
+            <div class="panel">
+                <div class="panel-header">
+                    <h3>⚙️ Tham Số Thiết Kế Móng Đơn</h3>
+                    <span class="badge-status badge-ok" id="footingStatusBadge">ĐẠT TCVN 9362</span>
+                </div>
+                <div class="form-group">
+                    <label>Lực dọc tiêu chuẩn N0,tc (kN): <span class="value-badge" id="lbl_fN">1850 kN</span></label>
+                    <input type="range" id="foot_N" min="200" max="4000" step="50" value="1850" oninput="updateFooting()">
+                </div>
+                <div class="form-group">
+                    <label>Mô-men tiêu chuẩn M0,tc (kN·m): <span class="value-badge" id="lbl_fM">95 kN·m</span></label>
+                    <input type="range" id="foot_M" min="0" max="300" step="5" value="95" oninput="updateFooting()">
+                </div>
+                <div class="form-group">
+                    <label>Cường độ tính toán của đất Rtc (kPa): <span class="value-badge" id="lbl_fR">220 kPa</span></label>
+                    <input type="range" id="foot_Rtc" min="100" max="500" step="10" value="220" oninput="updateFooting()">
+                </div>
+                <div class="form-group">
+                    <label>Chiều sâu chôn móng hm (m): <span class="value-badge" id="lbl_fhm">1.6 m</span></label>
+                    <input type="range" id="foot_hm" min="0.8" max="3.5" step="0.1" value="1.6" oninput="updateFooting()">
+                </div>
+
+                <div class="metric-cards">
+                    <div class="metric-box">
+                        <div class="metric-label">Kích thước đáy móng B x L</div>
+                        <div class="metric-val" id="foot_size">2.8 x 3.4 m</div>
+                        <div class="metric-sub" id="foot_area">Diện tích F = 9.52 m²</div>
+                    </div>
+                    <div class="metric-box">
+                        <div class="metric-label">Áp lực trung bình ptb</div>
+                        <div class="metric-val" id="foot_ptb">218 kPa</div>
+                        <div class="metric-sub">&le; Rtc = 220 kPa</div>
+                    </div>
+                    <div class="metric-box">
+                        <div class="metric-label">Áp lực lớn nhất pmax</div>
+                        <div class="metric-val" id="foot_pmax">254 kPa</div>
+                        <div class="metric-sub">&le; 1.2 Rtc = 264 kPa</div>
+                    </div>
+                    <div class="metric-box">
+                        <div class="metric-label">Thép móng chỉ định</div>
+                        <div class="metric-val" id="foot_rebar" style="color: var(--accent-amber);">Ф14a150</div>
+                        <div class="metric-sub">Thép 2 phương vuông góc</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Drawing Canvas (2D / 3D BIM) -->
+            <div class="drawing-canvas-wrapper">
+                <div class="drawing-canvas-toolbar">
+                    <div class="canvas-title">BẢN VẼ MÓNG ĐƠN NÔNG</div>
+                    <div style="display: flex; gap: 10px; align-items: center;">
+                        <div class="view-mode-toggle">
+                            <button class="view-mode-btn active" id="btnFoot2D" onclick="setFootViewMode('2d')">📐 2D CAD</button>
+                            <button class="view-mode-btn" id="btnFoot3D" onclick="setFootViewMode('3d')">🧊 3D BIM</button>
+                        </div>
+                        <button class="btn" onclick="downloadSvg('footSvg', 'Mat_Cat_Mong_Don.svg')">💾 Tải SVG</button>
+                    </div>
+                </div>
+                <div class="canvas-body" id="footCanvasBox">
+                    <div id="footSvgContainer" style="width: 100%; height: 100%; display: flex; align-items: center; justify-content: center;"></div>
+                    <div id="foot3DContainer" class="threejs-viewport">
+                        <div class="threejs-overlay-tips">🖱️ Giữ chuột trái: Xoay 360° | Cuộn: Thu/Phóng | Chuột phải: Di chuyển</div>
+                        <div class="threejs-controls-overlay">
+                            <button class="btn" style="padding: 4px 10px; font-size: 0.75rem;" onclick="resetFoot3DCamera()">🔄 Reset Góc Nhìn</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="title-block">
+                    <div><span class="label">CÔNG TRÌNH:</span> NHÀ CAO TẦNG DTU</div>
+                    <div><span class="label">BẢN VẼ:</span> CHI TIẾT MÓNG ĐƠN M1</div>
+                    <div><span class="label">TỶ LỆ:</span> 1:30</div>
+                    <div><span class="label">ĐƠN VỊ:</span> KHOA XD - DTU</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- =================================================================== -->
+    <!-- TAB 4: BẢN SÀN BTCT -->
+    <!-- =================================================================== -->
+    <div id="slabTab" class="tab-content">
+        <div class="grid-layout">
+            <div class="panel">
+                <div class="panel-header">
+                    <h3>⚙️ Tham Số Bản Sàn BTCT</h3>
+                    <span class="badge-status badge-ok" id="slabStatusBadge">BẢN KÊ 4 CẠNH</span>
+                </div>
+                <div class="form-group">
+                    <label>Cạnh ngắn nhịp L1 (m): <span class="value-badge" id="lbl_sL1">2.4 m</span></label>
+                    <input type="range" id="slab_L1" min="1.0" max="6.0" step="0.1" value="2.4" oninput="updateSlab()">
+                </div>
+                <div class="form-group">
+                    <label>Cạnh dài nhịp L2 (m): <span class="value-badge" id="lbl_sL2">6.2 m</span></label>
+                    <input type="range" id="slab_L2" min="1.0" max="10.0" step="0.1" value="6.2" oninput="updateSlab()">
+                </div>
+                <div class="form-group">
+                    <label>Tĩnh tải tính toán gs (kN/m²): <span class="value-badge" id="lbl_sgs">4.5 kN/m²</span></label>
+                    <input type="range" id="slab_gs" min="1.0" max="12.0" step="0.5" value="4.5" oninput="updateSlab()">
+                </div>
+                <div class="form-group">
+                    <label>Hoạt tải tính toán ps (kN/m²): <span class="value-badge" id="lbl_sps">3.0 kN/m²</span></label>
+                    <input type="range" id="slab_ps" min="0.5" max="10.0" step="0.5" value="3.0" oninput="updateSlab()">
+                </div>
+
+                <div class="metric-cards">
+                    <div class="metric-box">
+                        <div class="metric-label">Tỷ số L2 / L1</div>
+                        <div class="metric-val" id="slab_ratio">2.58</div>
+                        <div class="metric-sub" id="slab_work_type">Bản loại dầm (1 phương)</div>
+                    </div>
+                    <div class="metric-box">
+                        <div class="metric-label">Chiều dày khuyến nghị hs</div>
+                        <div class="metric-val" id="slab_hs">90 mm</div>
+                        <div class="metric-sub">Bê tông B25</div>
+                    </div>
+                    <div class="metric-box">
+                        <div class="metric-label">Mô-men lớn nhất Mmax</div>
+                        <div class="metric-val" id="slab_Mmax">3.93 kN·m</div>
+                        <div class="metric-sub">Dải bản 1m</div>
+                    </div>
+                    <div class="metric-box">
+                        <div class="metric-label">Chỉ định thép sàn</div>
+                        <div class="metric-val" id="slab_rebar" style="color: var(--accent-amber);">Ф8a150</div>
+                        <div class="metric-sub">As thực = 335 mm²/m</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Drawing Canvas -->
+            <div class="drawing-canvas-wrapper">
+                <div class="drawing-canvas-toolbar">
+                    <div class="canvas-title">BẢN VẼ SƠ ĐỒ MẶT BẰNG & MẶT CẮT BẢN SÀN BTCT</div>
+                    <button class="btn" onclick="downloadSvg('slabSvg', 'Mat_Bang_Ban_San.svg')">💾 Tải SVG</button>
+                </div>
+                <div class="canvas-body" id="slabCanvasBox">
+                    <!-- SVG will be dynamically generated here -->
+                </div>
+                <div class="title-block">
+                    <div><span class="label">CÔNG TRÌNH:</span> TỔ HỢP ĐÀ NẴNG</div>
+                    <div><span class="label">BẢN VẼ:</span> MẶT BẰNG Ô SÀN S1</div>
+                    <div><span class="label">TỶ LỆ:</span> 1:50</div>
+                    <div><span class="label">ĐƠN VỊ:</span> KHOA XD - DTU</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- =================================================================== -->
+    <!-- TAB 5: THÁP TẢI GIÓ THEO CHIỀU CAO (TCVN 2737:2023) -->
+    <!-- =================================================================== -->
+    <div id="windTab" class="tab-content">
+        <div class="grid-layout">
+            <div class="panel">
+                <div class="panel-header">
+                    <h3>🌪️ Tham Số Tải Gió TCVN 2737:2023</h3>
+                </div>
+                <div class="form-group">
+                    <label>Vùng áp lực gió:</label>
+                    <select id="wind_region" onchange="updateWind()">
+                        <option value="I">Vùng I (W0 = 0.65 kN/m² - Miền núi)</option>
+                        <option value="II">Vùng II (W0 = 0.95 kN/m² - Trung du)</option>
+                        <option value="III" selected>Vùng III (W0 = 1.25 kN/m² - Ven biển Đà Nẵng)</option>
+                        <option value="IV">Vùng IV (W0 = 1.55 kN/m² - Ven biển bão mạnh)</option>
+                        <option value="V">Vùng V (W0 = 1.85 kN/m² - Đảo xa đặc biệt)</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Dạng địa hình đón gió:</label>
+                    <select id="wind_terrain" onchange="updateWind()">
+                        <option value="A">Địa hình A (Trống trải, ven biển)</option>
+                        <option value="B" selected>Địa hình B (Ngoại ô, chướng ngại thưa)</option>
+                        <option value="C">Địa hình C (Đô thị xây dựng san sát)</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Số tầng nhà: <span class="value-badge" id="lbl_wFloors">12 tầng</span></label>
+                    <input type="range" id="wind_floors" min="3" max="30" step="1" value="12" oninput="updateWind()">
+                </div>
+                <div class="form-group">
+                    <label>Bề rộng đón gió B (m): <span class="value-badge" id="lbl_wB">24 m</span></label>
+                    <input type="range" id="wind_B" min="6" max="60" step="2" value="24" oninput="updateWind()">
+                </div>
+
+                <div class="metric-cards">
+                    <div class="metric-box">
+                        <div class="metric-label">Tổng chiều cao nhà H</div>
+                        <div class="metric-val" id="wind_H">43.2 m</div>
+                        <div class="metric-sub">Tầng điển hình h = 3.6m</div>
+                    </div>
+                    <div class="metric-box">
+                        <div class="metric-label">Lực cắt đáy tổng Qbase</div>
+                        <div class="metric-val" id="wind_Qbase">1248 kN</div>
+                        <div class="metric-sub">Tác dụng tại cos 0.000</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Drawing Canvas -->
+            <div class="drawing-canvas-wrapper">
+                <div class="drawing-canvas-toolbar">
+                    <div class="canvas-title">SƠ ĐỒ PHÂN BỐ TẢI TRỌNG GIÓ THEO CHIỀU CAO CÔNG TRÌNH</div>
+                    <button class="btn" onclick="downloadSvg('windSvg', 'So_Do_Tai_Gio.svg')">💾 Tải SVG</button>
+                </div>
+                <div class="canvas-body" id="windCanvasBox">
+                    <!-- SVG will be dynamically generated here -->
+                </div>
+                <div class="title-block">
+                    <div><span class="label">CÔNG TRÌNH:</span> THÁP ĐÔ THỊ ĐÀ NẴNG</div>
+                    <div><span class="label">BẢN VẼ:</span> BIỂU ĐỒ GIÓ TCVN 2737:2023</div>
+                    <div><span class="label">TỶ LỆ:</span> NTS</div>
+                    <div><span class="label">ĐƠN VỊ:</span> KHOA XD - DTU</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- =================================================================== -->
+    <!-- TAB 6: ĐƯỜNG CONG ĐẦM CHẶT ĐẤT PROCTOR -->
+    <!-- =================================================================== -->
+    <div id="proctorTab" class="tab-content">
+        <div class="grid-layout">
+            <div class="panel">
+                <div class="panel-header">
+                    <h3>🧪 Số Liệu Thí Nghiệm Đầm Chặt (Proctor)</h3>
+                </div>
+                <p style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 12px;">
+                    Nhập kết quả độ ẩm W(%) và dung trọng khô &gamma;d (g/cm³) của mẫu đất thí nghiệm:
+                </p>
+                <div class="form-group">
+                    <label>Khối lượng riêng hạt đất &Delta; (g/cm³): <span class="value-badge" id="lbl_delta">2.68 g/cm³</span></label>
+                    <input type="range" id="proc_delta" min="2.50" max="2.80" step="0.01" value="2.68" oninput="updateProctor()">
+                </div>
+                <div class="metric-cards">
+                    <div class="metric-box">
+                        <div class="metric-label">Độ ẩm tối ưu Wopt</div>
+                        <div class="metric-val" id="proc_Wopt" style="color: var(--cyan-glow);">13.8 %</div>
+                        <div class="metric-sub">Độ ẩm đầm nén tốt nhất</div>
+                    </div>
+                    <div class="metric-box">
+                        <div class="metric-label">Dung trọng khô lớn nhất &gamma;d,max</div>
+                        <div class="metric-val" id="proc_gammax" style="color: var(--accent-amber);">1.92 g/cm³</div>
+                        <div class="metric-sub">Độ chặt chuẩn K0.95 - K0.98</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Drawing Canvas -->
+            <div class="drawing-canvas-wrapper">
+                <div class="drawing-canvas-toolbar">
+                    <div class="canvas-title">ĐỒ THỊ ĐƯỜNG CONG ĐẦM CHẶT & ĐƯỜNG BÃO HÒA KHÍ (Sr = 1.0)</div>
+                    <button class="btn" onclick="downloadSvg('proctorSvg', 'Duong_Cong_Dam_Chat.svg')">💾 Tải SVG</button>
+                </div>
+                <div class="canvas-body" id="proctorCanvasBox">
+                    <!-- SVG will be dynamically generated here -->
+                </div>
+                <div class="title-block">
+                    <div><span class="label">CÔNG TRÌNH:</span> THÍ NGHIỆM ĐỊA KỸ THUẬT</div>
+                    <div><span class="label">BẢN VẼ:</span> ĐƯỜNG CONG PROCTOR</div>
+                    <div><span class="label">TỶ LỆ:</span> NTS</div>
+                    <div><span class="label">ĐƠN VỊ:</span> KHOA XD - DTU</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- =================================================================== -->
+    <!-- TAB 7: BÓC TÁCH KHỐI LƯỢNG & CẤP PHỐI VẬT TƯ -->
+    <!-- =================================================================== -->
+    <div id="boqTab" class="tab-content">
+        <div class="grid-layout">
+            <div class="panel">
+                <div class="panel-header">
+                    <h3>📋 Bảng Tính Cấp Phối Bê Tông (1m³)</h3>
+                </div>
+                <div class="form-group">
+                    <label>Thể tích bê tông cần đổ V (m³):</label>
+                    <input type="number" id="boq_V" min="1" max="1000" value="35" oninput="updateBOQ()">
+                </div>
+                <div class="form-group">
+                    <label>Mác / Cấp độ bền bê tông:</label>
+                    <select id="boq_mix_grade" onchange="updateBOQ()">
+                        <option value="M200">M200 (B15 - Xi măng: 285kg, Cát: 0.475m³, Đá: 0.855m³)</option>
+                        <option value="M250" selected>M250 (B20 - Xi măng: 325kg, Cát: 0.455m³, Đá: 0.870m³)</option>
+                        <option value="M300">M300 (B25 - Xi măng: 375kg, Cát: 0.435m³, Đá: 0.880m³)</option>
+                        <option value="M400">M400 (B30 - Xi măng: 445kg, Cát: 0.400m³, Đá: 0.875m³)</option>
+                    </select>
+                </div>
+                <div class="metric-cards">
+                    <div class="metric-box">
+                        <div class="metric-label">Tổng Xi măng PC40</div>
+                        <div class="metric-val" id="boq_cement">11,375 kg</div>
+                        <div class="metric-sub" id="boq_cement_bags">Tương đương 228 bao 50kg</div>
+                    </div>
+                    <div class="metric-box">
+                        <div class="metric-label">Tổng Cát vàng</div>
+                        <div class="metric-val" id="boq_sand">15.9 m³</div>
+                        <div class="metric-sub">Độ ẩm tự nhiên</div>
+                    </div>
+                    <div class="metric-box">
+                        <div class="metric-label">Tổng Đá 1x2</div>
+                        <div class="metric-val" id="boq_stone">30.5 m³</div>
+                        <div class="metric-sub">Đá dăm sàng tuyển</div>
+                    </div>
+                    <div class="metric-box">
+                        <div class="metric-label">Nước sinh hoạt</div>
+                        <div class="metric-val" id="boq_water">6,475 Lít</div>
+                        <div class="metric-sub">Nước sạch không tạp chất</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- BOQ Rebar Table Panel -->
+            <div class="panel">
+                <div class="panel-header">
+                    <h3>🔩 Bảng Bóc Tách Khối Lượng Thép Tự Động (Auto-BOQ)</h3>
+                    <span class="badge-status badge-ok" id="boq_total_ton">1.84 Tấn</span>
+                </div>
+                <div class="table-responsive">
+                    <table class="cad-table">
+                        <thead>
+                            <tr>
+                                <th>Cấu kiện</th>
+                                <th>Số hiệu</th>
+                                <th>Đường kính</th>
+                                <th>Chiều dài (m)</th>
+                                <th>Số lượng</th>
+                                <th>Khối lượng (kg)</th>
+                            </tr>
+                        </thead>
+                        <tbody id="boqTableBody">
+                            <!-- Populated via JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- =================================================================== -->
+    <!-- TAB 8: CƠ SỞ DỮ LIỆU TCVN ĐẦY ĐỦ (BỘ NÃO BẢO TOÀN 100%) -->
+    <!-- =================================================================== -->
+    <div id="tcvnDbTab" class="tab-content">
+        <div class="panel">
+            <div class="panel-header">
+                <h3>📚 CƠ SỞ DỮ LIỆU CHUẨN TCVN 5574:2018, TCVN 2737:2023 & TCVN 4453:1995</h3>
+            </div>
+            
+            <h4 style="color: var(--cyan-glow); margin: 18px 0 8px 0;">1. BẢNG CƯỜNG ĐỘ BÊ TÔNG (TCVN 5574:2018 - Bảng 6 & Bảng 7)</h4>
+            <div class="table-responsive">
+                <table class="cad-table">
+                    <thead>
+                        <tr>
+                            <th>Cấp độ bền</th>
+                            <th>Mác tương đương</th>
+                            <th>Rb (MPa)</th>
+                            <th>Rbt (MPa)</th>
+                            <th>Rb,ser (MPa)</th>
+                            <th>Rbt,ser (MPa)</th>
+                            <th>Eb (x10³ MPa)</th>
+                            <th>Khối lượng thể tích (&rho;)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr><td><b>B15</b></td><td>M200</td><td>8.5</td><td>0.75</td><td>11.0</td><td>1.15</td><td>23.0</td><td>2500 kg/m³</td></tr>
+                        <tr><td><b>B20</b></td><td>M250</td><td>11.5</td><td>0.90</td><td>15.0</td><td>1.35</td><td>27.0</td><td>2500 kg/m³</td></tr>
+                        <tr><td><b>B25</b></td><td>M300</td><td>14.5</td><td>1.05</td><td>18.5</td><td>1.55</td><td>30.0</td><td>2500 kg/m³</td></tr>
+                        <tr><td><b>B30</b></td><td>M400</td><td>17.0</td><td>1.15</td><td>22.0</td><td>1.75</td><td>32.5</td><td>2500 kg/m³</td></tr>
+                        <tr><td><b>B35</b></td><td>M450</td><td>19.5</td><td>1.30</td><td>25.5</td><td>1.95</td><td>34.5</td><td>2500 kg/m³</td></tr>
+                        <tr><td><b>B40</b></td><td>M500</td><td>22.0</td><td>1.40</td><td>29.0</td><td>2.10</td><td>36.0</td><td>2500 kg/m³</td></tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <h4 style="color: var(--accent-amber); margin: 24px 0 8px 0;">2. BẢNG ĐẶC TÍNH CỐT THÉP (TCVN 5574:2018 - Bảng 13 & Bảng 14)</h4>
+            <div class="table-responsive">
+                <table class="cad-table">
+                    <thead>
+                        <tr>
+                            <th>Nhóm cốt thép</th>
+                            <th>Rs (MPa)</th>
+                            <th>Rsc (MPa)</th>
+                            <th>Rsw (MPa)</th>
+                            <th>Rs,ser (MPa)</th>
+                            <th>Es (x10⁵ MPa)</th>
+                            <th>Hệ số &xi;R</th>
+                            <th>Đặc điểm cấu tạo</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr><td><b>CB240-T</b></td><td>210</td><td>210</td><td>170</td><td>240</td><td>2.0</td><td>0.615</td><td>Thép trơn (Làm cốt đai hoặc sàn)</td></tr>
+                        <tr><td><b>CB300-V</b></td><td>260</td><td>260</td><td>210</td><td>300</td><td>2.0</td><td>0.583</td><td>Thép gai có gờ thông dụng</td></tr>
+                        <tr><td><b>CB400-V</b></td><td>350</td><td>350</td><td>280</td><td>400</td><td>2.0</td><td>0.533</td><td>Thép gai cường độ cao</td></tr>
+                        <tr><td><b>CB500-V</b></td><td>435</td><td>400</td><td>300</td><td>500</td><td>2.0</td><td>0.493</td><td>Thép gai cường độ cao đặc biệt</td></tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <h4 style="color: var(--accent-green); margin: 24px 0 8px 0;">3. QUY ĐỊNH THỜI GIAN THÁO DỠ VÁN KHUÔN (TCVN 4453:1995)</h4>
+            <div class="table-responsive">
+                <table class="cad-table">
+                    <thead>
+                        <tr>
+                            <th>Loại cấu kiện</th>
+                            <th>Cường độ tối thiểu tháo cốp pha</th>
+                            <th>Mùa hè (> 20°C)</th>
+                            <th>Mùa đông (&le; 20°C)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr><td>Bản sàn nhịp L &le; 2m</td><td>50% R28</td><td>3 - 4 ngày</td><td>5 - 7 ngày</td></tr>
+                        <tr><td>Bản sàn nhịp 2m < L &le; 8m</td><td>70% R28</td><td>7 - 10 ngày</td><td>10 - 14 ngày</td></tr>
+                        <tr><td>Dầm, vòm nhịp L &le; 8m</td><td>70% R28</td><td>7 - 10 ngày</td><td>10 - 14 ngày</td></tr>
+                        <tr><td>Dầm, vòm nhịp L > 8m</td><td>90% R28</td><td>21 - 28 ngày</td><td>28 - 35 ngày</td></tr>
+                        <tr><td>Cấu kiện công-xôn (Console)</td><td>100% R28</td><td>21 - 28 ngày</td><td>28 ngày</td></tr>
+                        <tr><td>Cốp pha thành đứng (Cột, dầm, tường)</td><td>Chịu lực bản thân (> 5 MPa)</td><td>1 - 2 ngày</td><td>2 - 3 ngày</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer>
+        <p>© 2026 SmartConstruct Web AI • Nền tảng Bản vẽ Kỹ thuật & Tra cứu Tiêu chuẩn Xây dựng Thông minh</p>
+        <p style="margin-top: 4px; color: var(--dtu-gold);">Khoa Xây Dựng • Trường Đại Học Duy Tân (DTU)</p>
+    </footer>
+</div>
+
+<!-- =================================================================== -->
+<!-- JAVASCRIPT: BỘ NÃO TÍNH TOÁN (100% BẢO TOÀN) & LÕI 2D/3D BIM ENGINE -->
+<!-- =================================================================== -->
+<script>
+    // ===================================================================
+    // 1. CƠ SỞ DỮ LIỆU TCVN TĨNH 100% NGUYÊN VẸN (BỘ NÃO KHÔNG THAY ĐỔI)
+    // ===================================================================
+    const CONCRETE_DB = {
+        "B15": { Rb: 8.5,  Rbt: 0.75, Eb: 23000 },
+        "B20": { Rb: 11.5, Rbt: 0.90, Eb: 27000 },
+        "B25": { Rb: 14.5, Rbt: 1.05, Eb: 30000 },
+        "B30": { Rb: 17.0, Rbt: 1.15, Eb: 32500 },
+        "B35": { Rb: 19.5, Rbt: 1.30, Eb: 34500 },
+        "B40": { Rb: 22.0, Rbt: 1.40, Eb: 36000 }
+    };
+
+    const REBAR_DB = {
+        "CB240-T": { Rs: 210, Rsc: 210, xi_R: 0.615 },
+        "CB300-V": { Rs: 260, Rsc: 260, xi_R: 0.583 },
+        "CB400-V": { Rs: 350, Rsc: 350, xi_R: 0.533 },
+        "CB500-V": { Rs: 435, Rsc: 400, xi_R: 0.493 }
+    };
+
+    const REBAR_AREA = {
+        6: 28.3, 8: 50.3, 10: 78.5, 12: 113.1, 14: 153.9,
+        16: 201.1, 18: 254.5, 20: 314.2, 22: 380.1, 25: 490.9,
+        28: 615.8, 32: 804.2
+    };
+
+    const MIX_DB = {
+        "M200": { cement: 285, sand: 0.475, stone: 0.855, water: 185 },
+        "M250": { cement: 325, sand: 0.455, stone: 0.870, water: 185 },
+        "M300": { cement: 375, sand: 0.435, stone: 0.880, water: 190 },
+        "M400": { cement: 445, sand: 0.400, stone: 0.875, water: 195 }
+    };
+
+    // 2. SWITCH TABS
+    function switchTab(tabId, el) {
+        document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        document.getElementById(tabId).classList.add('active');
+        el.classList.add('active');
+
+        // Trigger 3D resize if switching to 3D tab
+        setTimeout(() => {
+            if (beamViewMode === '3d' && beamRenderer) onBeamWindowResize();
+            if (colViewMode === '3d' && colRenderer) onColWindowResize();
+            if (footViewMode === '3d' && footRenderer) onFootWindowResize();
+        }, 50);
+    }
+
+    // 3. TOGGLE THEME
+    let isLightMode = false;
+    function toggleTheme() {
+        isLightMode = !isLightMode;
+        document.body.classList.toggle('light-cad-mode', isLightMode);
+        document.getElementById('btnTheme').innerText = isLightMode ? '🎨 Giao diện: White CAD' : '🎨 Giao diện: Cyber CAD';
+        updateBeam();
+        updateColumn();
+        updateFooting();
+        updateSlab();
+        updateWind();
+        updateProctor();
+    }
+
+    // 4. DOWNLOAD SVG
+    function downloadSvg(svgId, filename) {
+        const svgEl = document.getElementById(svgId);
+        if (!svgEl) return;
+        const serializer = new XMLSerializer();
+        const source = serializer.serializeToString(svgEl);
+        const blob = new Blob([source], { type: 'image/svg+xml;charset=utf-8' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+    }
+
+    // ===================================================================
+    // LÕI ĐIỀU KHIỂN CHẾ ĐỘ VIEW (2D CAD <-> 3D BIM)
+    // ===================================================================
+    let beamViewMode = '2d';
+    let colViewMode = '2d';
+    let footViewMode = '2d';
+
+    function setBeamViewMode(mode) {
+        beamViewMode = mode;
+        document.getElementById('btnBeam2D').classList.toggle('active', mode === '2d');
+        document.getElementById('btnBeam3D').classList.toggle('active', mode === '3d');
+        document.getElementById('beamSvgContainer').style.display = (mode === '2d') ? 'flex' : 'none';
+        document.getElementById('beam3DContainer').style.display = (mode === '3d') ? 'block' : 'none';
+        if (mode === '3d') {
+            initBeam3D();
+            updateBeam3DModel();
+        }
+    }
+
+    function setColViewMode(mode) {
+        colViewMode = mode;
+        document.getElementById('btnCol2D').classList.toggle('active', mode === '2d');
+        document.getElementById('btnCol3D').classList.toggle('active', mode === '3d');
+        document.getElementById('colSvgContainer').style.display = (mode === '2d') ? 'flex' : 'none';
+        document.getElementById('col3DContainer').style.display = (mode === '3d') ? 'block' : 'none';
+        if (mode === '3d') {
+            initCol3D();
+            updateCol3DModel();
+        }
+    }
+
+    function setFootViewMode(mode) {
+        footViewMode = mode;
+        document.getElementById('btnFoot2D').classList.toggle('active', mode === '2d');
+        document.getElementById('btnFoot3D').classList.toggle('active', mode === '3d');
+        document.getElementById('footSvgContainer').style.display = (mode === '2d') ? 'flex' : 'none';
+        document.getElementById('foot3DContainer').style.display = (mode === '3d') ? 'block' : 'none';
+        if (mode === '3d') {
+            initFoot3D();
+            updateFoot3DModel();
+        }
+    }
+
+    // ===================================================================
+    // ENGINE 1: DẦM BTCT (BỘ NÃO TÍNH TOÁN & 2D/3D)
+    // ===================================================================
+    let lastBeamData = { b: 220, h: 450, n_bars: 4, dia: 18, x_comp: 122 };
+
+    function updateBeam() {
+        const b = parseInt(document.getElementById('beam_b').value);
+        const h = parseInt(document.getElementById('beam_h').value);
+        const M = parseFloat(document.getElementById('beam_M').value);
+        const concName = document.getElementById('beam_concrete').value;
+        const steelName = document.getElementById('beam_steel').value;
+        const dia = parseInt(document.getElementById('beam_dia').value);
+
+        document.getElementById('lbl_b').innerText = b + ' mm';
+        document.getElementById('lbl_h').innerText = h + ' mm';
+        document.getElementById('lbl_M').innerText = M + ' kN·m';
+
+        const Rb = CONCRETE_DB[concName].Rb;
+        const Rs = REBAR_DB[steelName].Rs;
+        const xi_R = REBAR_DB[steelName].xi_R;
+        const alpha_R = xi_R * (1 - 0.5 * xi_R);
+
+        const a_protect = 35;
+        const h0 = h - a_protect;
+        const M_Nmm = M * 1e6;
+        const alpha_m = M_Nmm / (Rb * b * h0 * h0);
+
+        let xi = 0;
+        let isSafe = true;
+        let statusBadge = document.getElementById('beamStatusBadge');
+
+        if (alpha_m > 0.5) {
+            isSafe = false;
+            xi = 0.5;
+            statusBadge.className = "badge-status badge-danger";
+            statusBadge.innerText = "NGUY HIỂM: VÙNG NÉN PHÁ HOẠI";
+        } else if (alpha_m > alpha_R) {
+            isSafe = false;
+            xi = 1 - Math.sqrt(Math.max(0, 1 - 2 * Math.min(alpha_m, 0.499)));
+            statusBadge.className = "badge-status badge-warn";
+            statusBadge.innerText = "CẦN TĂNG TIẾT DIỆN / ĐẶT CỐT KÉP";
+        } else {
+            xi = 1 - Math.sqrt(Math.max(0, 1 - 2 * alpha_m));
+            statusBadge.className = "badge-status badge-ok";
+            statusBadge.innerText = "ĐẠT TCVN 5574:2018";
+        }
+
+        const As_req = (xi * Rb * b * h0) / Rs;
+        const mu_pct = (As_req / (b * h0)) * 100;
+        const As1 = REBAR_AREA[dia];
+        const n_bars = Math.max(2, Math.min(6, Math.ceil(As_req / As1)));
+        const As_act = Math.round(n_bars * As1);
+        const comp_x = Math.round(xi * h0);
+
+        document.getElementById('beam_alpha_m').innerText = alpha_m.toFixed(4);
+        document.getElementById('beam_alpha_R').innerText = 'αR = ' + alpha_R.toFixed(3);
+        document.getElementById('beam_As_req').innerText = Math.round(As_req) + ' mm²';
+        document.getElementById('beam_mu_pct').innerText = 'μ = ' + mu_pct.toFixed(2) + '%';
+        document.getElementById('beam_rebar_sel').innerText = n_bars + 'Ф' + dia;
+        document.getElementById('beam_As_act').innerText = 'As thực = ' + As_act + ' mm²';
+        document.getElementById('beam_comp_x').innerText = comp_x + ' mm';
+        document.getElementById('beam_xi_val').innerText = 'ξ = ' + xi.toFixed(3);
+
+        lastBeamData = { b, h, n_bars, dia, x_comp: comp_x };
+
+        // 2D SVG
+        renderBeamSvg(b, h, comp_x, n_bars, dia, isSafe);
+
+        // 3D Model
+        if (beamViewMode === '3d') {
+            updateBeam3DModel();
+        }
+    }
+
+    function renderBeamSvg(b, h, x_comp, n_bars, dia, isSafe) {
+        const svgW = 600, svgH = 460;
+        const padX = 140, padY = 50;
+        const drawH = 340;
+        const scale = drawH / Math.max(h, 400);
+        const beamW = Math.max(120, Math.min(260, b * scale));
+        const beamH = h * scale;
+        const startX = padX + (280 - beamW) / 2;
+        const startY = padY;
+        const compH = Math.min(x_comp * scale, beamH);
+
+        const cover = 18;
+        const stirW = beamW - 2 * cover;
+        const stirH = beamH - 2 * cover;
+        const stirX = startX + cover;
+        const stirY = startY + cover;
+
+        let barsSvg = '';
+        const botY = startY + beamH - cover - 10;
+        for (let i = 0; i < n_bars; i++) {
+            const bx = (n_bars === 1) ? (stirX + stirW / 2) : (stirX + 10 + i * ((stirW - 20) / (n_bars - 1)));
+            barsSvg += `
+                <circle cx="${bx.toFixed(1)}" cy="${botY.toFixed(1)}" r="8.5" fill="#F59E0B" stroke="#FDE68A" stroke-width="2" filter="url(#glow)"/>
+                <circle cx="${bx.toFixed(1)}" cy="${botY.toFixed(1)}" r="3" fill="#FFF"/>
+            `;
+        }
+
+        const topY = stirY + 10;
+        const topBar1 = stirX + 10;
+        const topBar2 = stirX + stirW - 10;
+
+        const svg = `
+        <svg id="beamSvg" class="blueprint-svg" viewBox="0 0 ${svgW} ${svgH}">
+            <defs>
+                <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
+                    <feGaussianBlur stdDeviation="3" result="blur" />
+                    <feComposite in="SourceGraphic" in2="blur" operator="over" />
+                </filter>
+                <pattern id="gridPattern" width="20" height="20" patternUnits="userSpaceOnUse">
+                    <path d="M 20 0 L 0 0 0 20" fill="none" stroke="${isLightMode ? 'rgba(0,0,0,0.06)' : 'rgba(255,255,255,0.04)'}" stroke-width="1"/>
+                </pattern>
+            </defs>
+            <rect width="100%" height="100%" fill="url(#gridPattern)" />
+
+            <text x="25" y="30" fill="${isLightMode ? '#0F172A' : '#F8FAFC'}" font-size="13" font-weight="700">MẶT CẮT DẦM KỸ THUẬT: b x h = ${b} x ${h} mm</text>
+            <text x="${svgW - 25}" y="30" fill="#38BDF8" font-size="11" font-weight="600" text-anchor="end">CỐT THÉP: ${n_bars}Ф${dia}</text>
+
+            <rect x="${startX.toFixed(1)}" y="${startY.toFixed(1)}" width="${beamW.toFixed(1)}" height="${beamH.toFixed(1)}" fill="${isLightMode ? '#E2E8F0' : '#1E293B'}" stroke="#38BDF8" stroke-width="2.2" rx="3"/>
+            <rect x="${startX.toFixed(1)}" y="${startY.toFixed(1)}" width="${beamW.toFixed(1)}" height="${compH.toFixed(1)}" fill="rgba(239, 68, 68, 0.28)" stroke="#EF4444" stroke-width="1.5" stroke-dasharray="4,2"/>
+            <text x="${(startX + beamW/2).toFixed(1)}" y="${(startY + compH/2 + 4).toFixed(1)}" fill="#FCA5A5" font-size="10" font-weight="700" text-anchor="middle">VÙNG NÉN BÊ TÔNG (x = ${x_comp}mm)</text>
+
+            <line x1="${(startX - 20).toFixed(1)}" y1="${(startY + compH).toFixed(1)}" x2="${(startX + beamW + 20).toFixed(1)}" y2="${(startY + compH).toFixed(1)}" stroke="#F43F5E" stroke-width="1.8" stroke-dasharray="6,3"/>
+            <text x="${(startX + beamW + 24).toFixed(1)}" y="${(startY + compH + 4).toFixed(1)}" fill="#F43F5E" font-size="9" font-weight="700">T.T.H</text>
+
+            <rect x="${stirX.toFixed(1)}" y="${stirY.toFixed(1)}" width="${stirW.toFixed(1)}" height="${stirH.toFixed(1)}" fill="none" stroke="#94A3B8" stroke-width="2" rx="4"/>
+            <text x="${(stirX + 6).toFixed(1)}" y="${(startY + beamH/2).toFixed(1)}" fill="#94A3B8" font-size="9" transform="rotate(-90 ${(stirX + 6).toFixed(1)} ${(startY + beamH/2).toFixed(1)})">Cốt đai Ф8 a150</text>
+
+            <circle cx="${topBar1.toFixed(1)}" cy="${topY.toFixed(1)}" r="6" fill="#60A5FA" stroke="#93C5FD" stroke-width="1.5"/>
+            <circle cx="${topBar2.toFixed(1)}" cy="${topY.toFixed(1)}" r="6" fill="#60A5FA" stroke="#93C5FD" stroke-width="1.5"/>
+            <text x="${(topBar2 + 16).toFixed(1)}" y="${(topY + 3).toFixed(1)}" fill="#93C5FD" font-size="9.5">2Ф12 (Thép cấu tạo)</text>
+
+            ${barsSvg}
+            <text x="${(startX + beamW/2).toFixed(1)}" y="${(botY + 28).toFixed(1)}" fill="#FDE68A" font-size="11" font-weight="700" text-anchor="middle">Thép chủ: ${n_bars}Ф${dia}</text>
+
+            <line x1="${startX.toFixed(1)}" y1="${startY - 14}" x2="${(startX + beamW).toFixed(1)}" y2="${startY - 14}" stroke="#38BDF8" stroke-width="1.2"/>
+            <line x1="${startX.toFixed(1)}" y1="${startY - 18}" x2="${startX.toFixed(1)}" y2="${startY - 10}" stroke="#38BDF8" stroke-width="1.2"/>
+            <line x1="${(startX + beamW).toFixed(1)}" y1="${startY - 18}" x2="${(startX + beamW).toFixed(1)}" y2="${startY - 10}" stroke="#38BDF8" stroke-width="1.2"/>
+            <text x="${(startX + beamW/2).toFixed(1)}" y="${startY - 18}" fill="#38BDF8" font-size="10" font-weight="700" text-anchor="middle">b = ${b} mm</text>
+
+            <line x1="${startX - 22}" y1="${startY.toFixed(1)}" x2="${startX - 22}" y2="${(startY + beamH).toFixed(1)}" stroke="#38BDF8" stroke-width="1.2"/>
+            <line x1="${startX - 26}" y1="${startY.toFixed(1)}" x2="${startX - 18}" y2="${startY.toFixed(1)}" stroke="#38BDF8" stroke-width="1.2"/>
+            <line x1="${startX - 26}" y1="${(startY + beamH).toFixed(1)}" x2="${startX - 18}" y2="${(startY + beamH).toFixed(1)}" stroke="#38BDF8" stroke-width="1.2"/>
+            <text x="${startX - 28}" y="${(startY + beamH/2).toFixed(1)}" fill="#38BDF8" font-size="10" font-weight="700" text-anchor="middle" transform="rotate(-90 ${startX - 28} ${(startY + beamH/2).toFixed(1)})">h = ${h} mm</text>
+        </svg>`;
+
+        document.getElementById('beamSvgContainer').innerHTML = svg;
+    }
+
+    // ===================================================================
+    // THREE.JS 3D BIM ENGINE CHO DẦM BTCT
+    // ===================================================================
+    let beamScene, beamCamera, beamRenderer, beamControls, beam3DGroup;
+
+    function initBeam3D() {
+        if (beamRenderer) return;
+        const container = document.getElementById('beam3DContainer');
+        const w = container.clientWidth || 600;
+        const h = container.clientHeight || 440;
+
+        beamScene = new THREE.Scene();
+        beamScene.background = new THREE.Color(0x070B14);
+
+        beamCamera = new THREE.PerspectiveCamera(45, w / h, 0.1, 1000);
+        beamCamera.position.set(15, 12, 18);
+
+        beamRenderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+        beamRenderer.setSize(w, h);
+        beamRenderer.setPixelRatio(window.devicePixelRatio);
+        beamRenderer.shadowMap.enabled = true;
+        container.appendChild(beamRenderer.domElement);
+
+        beamControls = new THREE.OrbitControls(beamCamera, beamRenderer.domElement);
+        beamControls.enableDamping = true;
+        beamControls.dampingFactor = 0.05;
+
+        // Ánh sáng kỹ thuật
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.85);
+        beamScene.add(ambientLight);
+
+        const dirLight = new THREE.DirectionalLight(0x38BDF8, 1.2);
+        dirLight.position.set(20, 30, 20);
+        beamScene.add(dirLight);
+
+        const dirLight2 = new THREE.DirectionalLight(0xF59E0B, 0.8);
+        dirLight2.position.set(-20, -10, -20);
+        beamScene.add(dirLight2);
+
+        // Lưới sàn kỹ thuật Blueprint Grid
+        const gridHelper = new THREE.GridHelper(30, 30, 0x38BDF8, 0x1E293B);
+        gridHelper.position.y = -4;
+        beamScene.add(gridHelper);
+
+        beam3DGroup = new THREE.Group();
+        beamScene.add(beam3DGroup);
+
+        window.addEventListener('resize', onBeamWindowResize);
+
+        function animate() {
+            requestAnimationFrame(animate);
+            if (beamControls) beamControls.update();
+            if (beamRenderer && beamScene && beamCamera) {
+                beamRenderer.render(beamScene, beamCamera);
+            }
+        }
+        animate();
+    }
+
+    function onBeamWindowResize() {
+        if (!beamRenderer || !beamCamera) return;
+        const container = document.getElementById('beam3DContainer');
+        const w = container.clientWidth;
+        const h = container.clientHeight;
+        if (w > 0 && h > 0) {
+            beamCamera.aspect = w / h;
+            beamCamera.updateProjectionMatrix();
+            beamRenderer.setSize(w, h);
+        }
+    }
+
+    function resetBeam3DCamera() {
+        if (beamCamera && beamControls) {
+            beamCamera.position.set(15, 12, 18);
+            beamControls.target.set(0, 0, 0);
+            beamControls.update();
+        }
+    }
+
+    function updateBeam3DModel() {
+        if (!beam3DGroup) return;
+        while (beam3DGroup.children.length > 0) {
+            beam3DGroup.remove(beam3DGroup.children[0]);
+        }
+
+        const b_m = lastBeamData.b / 100.0;
+        const h_m = lastBeamData.h / 100.0;
+        const L_m = 16.0; // chiều dài dầm 3D mô phỏng
+        const n_bars = lastBeamData.n_bars;
+
+        // 1. Khối Bê Tông Thấu Quang X-Ray
+        const concreteGeo = new THREE.BoxGeometry(b_m, h_m, L_m);
+        const concreteMat = new THREE.MeshPhysicalMaterial({
+            color: 0x1E293B,
+            transparent: true,
+            opacity: 0.38,
+            roughness: 0.2,
+            metalness: 0.1,
+            transmission: 0.4,
+            ior: 1.2
+        });
+        const concreteMesh = new THREE.Mesh(concreteGeo, concreteMat);
+        beam3DGroup.add(concreteMesh);
+
+        // Viền cạnh phát sáng Cyber Edges
+        const edges = new THREE.EdgesGeometry(concreteGeo);
+        const line = new THREE.LineSegments(edges, new THREE.LineBasicMaterial({ color: 0x38BDF8, linewidth: 2 }));
+        beam3DGroup.add(line);
+
+        // 2. Thép Chủ Lớp Dưới (Vàng Ánh Kim)
+        const rebarMat = new THREE.MeshStandardMaterial({
+            color: 0xF59E0B,
+            metalness: 0.85,
+            roughness: 0.25
+        });
+        const barR = 0.10;
+        const cover = 0.35;
+        const barGeo = new THREE.CylinderGeometry(barR, barR, L_m - 0.4, 16);
+        barGeo.rotateX(Math.PI / 2);
+
+        const yBot = -h_m / 2 + cover;
+        const xSpan = b_m - 2 * cover;
+
+        for (let i = 0; i < n_bars; i++) {
+            const xPos = (n_bars === 1) ? 0 : (-xSpan / 2 + i * (xSpan / (n_bars - 1)));
+            const barMesh = new THREE.Mesh(barGeo, rebarMat);
+            barMesh.position.set(xPos, yBot, 0);
+            beam3DGroup.add(barMesh);
+        }
+
+        // 3. Thép Giá Lớp Trên (2 thanh xanh dương)
+        const topBarMat = new THREE.MeshStandardMaterial({ color: 0x60A5FA, metalness: 0.8, roughness: 0.3 });
+        const topBarGeo = new THREE.CylinderGeometry(0.07, 0.07, L_m - 0.4, 16);
+        topBarGeo.rotateX(Math.PI / 2);
+        const yTop = h_m / 2 - cover;
+
+        const topBar1 = new THREE.Mesh(topBarGeo, topBarMat);
+        topBar1.position.set(-xSpan / 2, yTop, 0);
+        beam3DGroup.add(topBar1);
+
+        const topBar2 = new THREE.Mesh(topBarGeo, topBarMat);
+        topBar2.position.set(xSpan / 2, yTop, 0);
+        beam3DGroup.add(topBar2);
+
+        // 4. Hệ Thống Cốt Đai 3D (Stirrups) Chạy Dọc Dầm
+        const stirrupMat = new THREE.LineBasicMaterial({ color: 0xE2E8F0, linewidth: 2 });
+        const numStirrups = 20;
+        const zStep = (L_m - 1.0) / (numStirrups - 1);
+
+        for (let j = 0; j < numStirrups; j++) {
+            const zPos = -L_m / 2 + 0.5 + j * zStep;
+            const pts = [
+                new THREE.Vector3(-xSpan / 2, yTop, zPos),
+                new THREE.Vector3(xSpan / 2, yTop, zPos),
+                new THREE.Vector3(xSpan / 2, yBot, zPos),
+                new THREE.Vector3(-xSpan / 2, yBot, zPos),
+                new THREE.Vector3(-xSpan / 2, yTop, zPos)
+            ];
+            const stirrupGeo = new THREE.BufferGeometry().setFromPoints(pts);
+            const stirrupLine = new THREE.Line(stirrupGeo, stirrupMat);
+            beam3DGroup.add(stirrupLine);
+        }
+    }
+
+    // ===================================================================
+    // ENGINE 2: CỘT BTCT (BỘ NÃO TÍNH TOÁN & 2D/3D)
+    // ===================================================================
+    let lastColData = { b: 300, h: 400, N: 1850, M: 95 };
+
+    function updateColumn() {
+        const b = parseInt(document.getElementById('col_b').value);
+        const h = parseInt(document.getElementById('col_h').value);
+        const N = parseFloat(document.getElementById('col_N').value);
+        const M = parseFloat(document.getElementById('col_M').value);
+        const L0 = parseFloat(document.getElementById('col_L0').value);
+
+        document.getElementById('lbl_col_b').innerText = b + ' mm';
+        document.getElementById('lbl_col_h').innerText = h + ' mm';
+        document.getElementById('lbl_col_N').innerText = N + ' kN';
+        document.getElementById('lbl_col_M').innerText = M + ' kN·m';
+        document.getElementById('lbl_col_L0').innerText = L0 + ' mm';
+
+        const i_rad = 0.288 * h;
+        const lambda = (L0 / i_rad).toFixed(1);
+        const eta = (lambda <= 14) ? 1.0 : (1.0 + Math.pow(lambda / 100, 1.5)).toFixed(2);
+        const e1 = (N > 0) ? (M * 1000 / N) : 0;
+        const ea = Math.max(L0 / 600, h / 30, 10);
+        const e_calc = (eta * (e1 + ea)).toFixed(1);
+
+        const P_max = Math.round((14.5 * b * h + 350 * 0.02 * b * h) / 1000);
+        const isSafe = (N <= P_max) && (M <= 320);
+
+        document.getElementById('col_e_calc').innerText = e_calc + ' mm';
+        document.getElementById('col_eta').innerText = 'Hệ số η = ' + eta;
+        document.getElementById('col_slender').innerText = lambda;
+        document.getElementById('col_p_max').innerText = P_max + ' kN';
+        document.getElementById('col_p_ratio').innerText = 'N/Pmax = ' + ((N / P_max) * 100).toFixed(1) + '%';
+
+        const badge = document.getElementById('colStatusBadge');
+        if (isSafe) {
+            badge.className = "badge-status badge-ok";
+            badge.innerText = "AN TOÀN CHỊU LỰC (TCVN 5574)";
+        } else {
+            badge.className = "badge-status badge-danger";
+            badge.innerText = "NGUY CƠ MẤT ỔN ĐỊNH / QUÁ TẢI";
+        }
+
+        lastColData = { b, h, N, M };
+
+        renderColSvg(b, h, N, M, P_max, isSafe);
+
+        if (colViewMode === '3d') {
+            updateCol3DModel();
+        }
+    }
+
+    function renderColSvg(b, h, N, M, P_max, isSafe) {
+        const svgW = 600, svgH = 460;
+        const svg = `
+        <svg id="colSvg" class="blueprint-svg" viewBox="0 0 ${svgW} ${svgH}">
+            <defs>
+                <pattern id="gridPattern2" width="20" height="20" patternUnits="userSpaceOnUse">
+                    <path d="M 20 0 L 0 0 0 20" fill="none" stroke="${isLightMode ? 'rgba(0,0,0,0.06)' : 'rgba(255,255,255,0.04)'}" stroke-width="1"/>
+                </pattern>
+            </defs>
+            <rect width="100%" height="100%" fill="url(#gridPattern2)" />
+
+            <text x="30" y="32" fill="${isLightMode ? '#0F172A' : '#F8FAFC'}" font-size="12" font-weight="700">MẶT CẮT CỘT C1 (${b}x${h}mm)</text>
+            <rect x="40" y="60" width="180" height="240" fill="${isLightMode ? '#E2E8F0' : '#1E293B'}" stroke="#38BDF8" stroke-width="2.5" rx="4"/>
+            <rect x="55" y="75" width="150" height="210" fill="none" stroke="#94A3B8" stroke-width="2" rx="4"/>
+
+            <circle cx="65" cy="85" r="7.5" fill="#F59E0B" stroke="#FDE68A" stroke-width="2"/>
+            <circle cx="195" cy="85" r="7.5" fill="#F59E0B" stroke="#FDE68A" stroke-width="2"/>
+            <circle cx="65" cy="180" r="7.5" fill="#F59E0B" stroke="#FDE68A" stroke-width="2"/>
+            <circle cx="195" cy="180" r="7.5" fill="#F59E0B" stroke="#FDE68A" stroke-width="2"/>
+            <circle cx="65" cy="275" r="7.5" fill="#F59E0B" stroke="#FDE68A" stroke-width="2"/>
+            <circle cx="195" cy="275" r="7.5" fill="#F59E0B" stroke="#FDE68A" stroke-width="2"/>
+
+            <line x1="130" y1="45" x2="130" y2="315" stroke="#F43F5E" stroke-width="1" stroke-dasharray="4,3"/>
+            <line x1="25" y1="180" x2="235" y2="180" stroke="#F43F5E" stroke-width="1" stroke-dasharray="4,3"/>
+            <text x="130" y="335" fill="#FDE68A" font-size="11" font-weight="700" text-anchor="middle">6Ф20 (Cốt thép đối xứng)</text>
+
+            <text x="340" y="32" fill="${isLightMode ? '#0F172A' : '#F8FAFC'}" font-size="12" font-weight="700">BIỂU ĐỒ BAO TƯƠNG TÁC P - M</text>
+            <line x1="330" y1="310" x2="570" y2="310" stroke="#94A3B8" stroke-width="1.5"/>
+            <line x1="330" y1="310" x2="330" y2="50" stroke="#94A3B8" stroke-width="1.5"/>
+            <text x="570" y="325" fill="#94A3B8" font-size="10" font-weight="700">M (kN·m)</text>
+            <text x="325" y="45" fill="#94A3B8" font-size="10" font-weight="700" text-anchor="end">P (kN)</text>
+
+            <path d="M 330 70 Q 420 80 480 160 T 520 280 L 450 310 L 330 310 Z" fill="rgba(56, 189, 248, 0.15)" stroke="#38BDF8" stroke-width="2.5"/>
+
+            ${(() => {
+                const px = 330 + Math.min(200, (M / 250) * 160);
+                const py = 310 - Math.min(240, (N / P_max) * 220);
+                return `
+                <circle cx="${px.toFixed(1)}" cy="${py.toFixed(1)}" r="7" fill="${isSafe ? '#10B981' : '#EF4444'}" stroke="#FFF" stroke-width="2"/>
+                <text x="${(px + 10).toFixed(1)}" y="${(py - 5).toFixed(1)}" fill="${isSafe ? '#34D399' : '#F87171'}" font-size="10" font-weight="700">(${M}, ${N})</text>
+                `;
+            })()}
+
+            <text x="440" y="360" fill="#94A3B8" font-size="9.5" text-anchor="middle">Điểm xanh trong đường bao: KẾT CẤU AN TOÀN</text>
+        </svg>`;
+
+        document.getElementById('colSvgContainer').innerHTML = svg;
+    }
+
+    // ===================================================================
+    // THREE.JS 3D BIM ENGINE CHO CỘT BTCT
+    // ===================================================================
+    let colScene, colCamera, colRenderer, colControls, col3DGroup;
+
+    function initCol3D() {
+        if (colRenderer) return;
+        const container = document.getElementById('col3DContainer');
+        const w = container.clientWidth || 600;
+        const h = container.clientHeight || 440;
+
+        colScene = new THREE.Scene();
+        colScene.background = new THREE.Color(0x070B14);
+
+        colCamera = new THREE.PerspectiveCamera(45, w / h, 0.1, 1000);
+        colCamera.position.set(16, 14, 16);
+
+        colRenderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+        colRenderer.setSize(w, h);
+        colRenderer.setPixelRatio(window.devicePixelRatio);
+        container.appendChild(colRenderer.domElement);
+
+        colControls = new THREE.OrbitControls(colCamera, colRenderer.domElement);
+        colControls.enableDamping = true;
+
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.85);
+        colScene.add(ambientLight);
+
+        const dirLight = new THREE.DirectionalLight(0x38BDF8, 1.2);
+        dirLight.position.set(20, 25, 20);
+        colScene.add(dirLight);
+
+        const gridHelper = new THREE.GridHelper(25, 25, 0x38BDF8, 0x1E293B);
+        gridHelper.position.y = -6;
+        colScene.add(gridHelper);
+
+        col3DGroup = new THREE.Group();
+        colScene.add(col3DGroup);
+
+        window.addEventListener('resize', onColWindowResize);
+
+        function animate() {
+            requestAnimationFrame(animate);
+            if (colControls) colControls.update();
+            if (colRenderer && colScene && colCamera) {
+                colRenderer.render(colScene, colCamera);
+            }
+        }
+        animate();
+    }
+
+    function onColWindowResize() {
+        if (!colRenderer || !colCamera) return;
+        const container = document.getElementById('col3DContainer');
+        const w = container.clientWidth;
+        const h = container.clientHeight;
+        if (w > 0 && h > 0) {
+            colCamera.aspect = w / h;
+            colCamera.updateProjectionMatrix();
+            colRenderer.setSize(w, h);
+        }
+    }
+
+    function resetCol3DCamera() {
+        if (colCamera && colControls) {
+            colCamera.position.set(16, 14, 16);
+            colControls.target.set(0, 0, 0);
+            colControls.update();
+        }
+    }
+
+    function updateCol3DModel() {
+        if (!col3DGroup) return;
+        while (col3DGroup.children.length > 0) {
+            col3DGroup.remove(col3DGroup.children[0]);
+        }
+
+        const b_m = lastColData.b / 100.0;
+        const h_m = lastColData.h / 100.0;
+        const H_col = 11.0;
+
+        // Bê tông Cột Thấu Quang
+        const colGeo = new THREE.BoxGeometry(b_m, H_col, h_m);
+        const colMat = new THREE.MeshPhysicalMaterial({
+            color: 0x1E293B,
+            transparent: true,
+            opacity: 0.35,
+            transmission: 0.35,
+            roughness: 0.2
+        });
+        const colMesh = new THREE.Mesh(colGeo, colMat);
+        col3DGroup.add(colMesh);
+
+        const edges = new THREE.EdgesGeometry(colGeo);
+        const line = new THREE.LineSegments(edges, new THREE.LineBasicMaterial({ color: 0x38BDF8 }));
+        col3DGroup.add(line);
+
+        // 6 Thanh Thép Dọc
+        const rebarMat = new THREE.MeshStandardMaterial({ color: 0xF59E0B, metalness: 0.85, roughness: 0.25 });
+        const barGeo = new THREE.CylinderGeometry(0.12, 0.12, H_col - 0.4, 16);
+        const cover = 0.30;
+        const xSpan = b_m / 2 - cover;
+        const zSpan = h_m / 2 - cover;
+
+        const rebarCoords = [
+            [-xSpan, -zSpan], [xSpan, -zSpan],
+            [-xSpan, 0],      [xSpan, 0],
+            [-xSpan, zSpan],  [xSpan, zSpan]
+        ];
+
+        rebarCoords.forEach(pos => {
+            const bar = new THREE.Mesh(barGeo, rebarMat);
+            bar.position.set(pos[0], 0, pos[1]);
+            col3DGroup.add(bar);
+        });
+
+        // Cốt Đai Khép Kín Xếp Tầng
+        const stirrupMat = new THREE.LineBasicMaterial({ color: 0xE2E8F0, linewidth: 2 });
+        const numTies = 15;
+        const yStep = (H_col - 0.8) / (numTies - 1);
+
+        for (let k = 0; k < numTies; k++) {
+            const yPos = -H_col / 2 + 0.4 + k * yStep;
+            const pts = [
+                new THREE.Vector3(-xSpan, yPos, -zSpan),
+                new THREE.Vector3(xSpan, yPos, -zSpan),
+                new THREE.Vector3(xSpan, yPos, zSpan),
+                new THREE.Vector3(-xSpan, yPos, zSpan),
+                new THREE.Vector3(-xSpan, yPos, -zSpan)
+            ];
+            const tieGeo = new THREE.BufferGeometry().setFromPoints(pts);
+            const tieLine = new THREE.Line(tieGeo, stirrupMat);
+            col3DGroup.add(tieLine);
+        }
+    }
+
+    // ===================================================================
+    // ENGINE 3: MÓNG ĐƠN (BỘ NÃO TÍNH TOÁN & 2D/3D)
+    // ===================================================================
+    let lastFootData = { B: 2.8, L: 3.4, hm: 1.6 };
+
+    function updateFooting() {
+        const N = parseFloat(document.getElementById('foot_N').value);
+        const M = parseFloat(document.getElementById('foot_M').value);
+        const Rtc = parseFloat(document.getElementById('foot_Rtc').value);
+        const hm = parseFloat(document.getElementById('foot_hm').value);
+
+        document.getElementById('lbl_fN').innerText = N + ' kN';
+        document.getElementById('lbl_fM').innerText = M + ' kN·m';
+        document.getElementById('lbl_fR').innerText = Rtc + ' kPa';
+        document.getElementById('lbl_fhm').innerText = hm + ' m';
+
+        const gamma_tb = 20.0;
+        const F_req = N / (Rtc - gamma_tb * hm);
+        const B = Math.max(1.4, Math.round(Math.sqrt(F_req / 1.2) * 10) / 10);
+        const L = Math.max(1.6, Math.round(1.2 * B * 10) / 10);
+        const F = B * L;
+        const W = (B * L * L) / 6.0;
+
+        const N_total = N + gamma_tb * F * hm;
+        const ptb = Math.round(N_total / F);
+        const pmax = Math.round(ptb + (M / W));
+        const pmin = Math.round(ptb - (M / W));
+
+        document.getElementById('foot_size').innerText = B + ' x ' + L + ' m';
+        document.getElementById('foot_area').innerText = 'Diện tích F = ' + F.toFixed(2) + ' m²';
+        document.getElementById('foot_ptb').innerText = ptb + ' kPa';
+        document.getElementById('foot_pmax').innerText = pmax + ' kPa';
+
+        const isSafe = (ptb <= Rtc) && (pmax <= 1.2 * Rtc) && (pmin >= 0);
+        const badge = document.getElementById('footingStatusBadge');
+        if (isSafe) {
+            badge.className = "badge-status badge-ok";
+            badge.innerText = "ĐẠT TCVN 9362:2012";
+        } else {
+            badge.className = "badge-status badge-warn";
+            badge.innerText = "ÁP LỰC VƯỢT GIỚI HẠN CHO PHÉP";
+        }
+
+        lastFootData = { B, L, hm };
+
+        renderFootingSvg(B, L, hm, ptb, pmax, isSafe);
+
+        if (footViewMode === '3d') {
+            updateFoot3DModel();
+        }
+    }
+
+    function renderFootingSvg(B, L, hm, ptb, pmax, isSafe) {
+        const svgW = 600, svgH = 460;
+        const svg = `
+        <svg id="footSvg" class="blueprint-svg" viewBox="0 0 ${svgW} ${svgH}">
+            <defs>
+                <pattern id="gridPattern3" width="20" height="20" patternUnits="userSpaceOnUse">
+                    <path d="M 20 0 L 0 0 0 20" fill="none" stroke="${isLightMode ? 'rgba(0,0,0,0.06)' : 'rgba(255,255,255,0.04)'}" stroke-width="1"/>
+                </pattern>
+            </defs>
+            <rect width="100%" height="100%" fill="url(#gridPattern3)" />
+
+            <text x="25" y="30" fill="${isLightMode ? '#0F172A' : '#F8FAFC'}" font-size="13" font-weight="700">MẶT CẮT KỸ THUẬT MÓNG ĐƠN NÔNG: B x L = ${B}m x ${L}m</text>
+
+            <line x1="40" y1="90" x2="560" y2="90" stroke="#10B981" stroke-width="2" stroke-dasharray="6,3"/>
+            <text x="560" y="85" fill="#10B981" font-size="10" font-weight="700" text-anchor="end">COS TỰ NHIÊN ±0.000 (hm = ${hm}m)</text>
+
+            <rect x="260" y="90" width="80" height="120" fill="${isLightMode ? '#CBD5E1' : '#1E293B'}" stroke="#38BDF8" stroke-width="2"/>
+            <text x="300" y="150" fill="#38BDF8" font-size="10" font-weight="700" text-anchor="middle">CỔ CỘT</text>
+
+            <polygon points="120,330 480,330 380,210 220,210" fill="${isLightMode ? '#E2E8F0' : '#1E293B'}" stroke="#38BDF8" stroke-width="2.2"/>
+
+            <rect x="100" y="330" width="400" height="25" fill="#475569" stroke="#94A3B8" stroke-width="1.2"/>
+            <text x="300" y="347" fill="#F8FAFC" font-size="9.5" text-anchor="middle">BÊ TÔNG LÓT M100 DÀY 100mm</text>
+
+            <line x1="130" y1="322" x2="470" y2="322" stroke="#F59E0B" stroke-width="3"/>
+            <circle cx="160" cy="322" r="4" fill="#FDE68A"/>
+            <circle cx="210" cy="322" r="4" fill="#FDE68A"/>
+            <circle cx="260" cy="322" r="4" fill="#FDE68A"/>
+            <circle cx="300" cy="322" r="4" fill="#FDE68A"/>
+            <circle cx="340" cy="322" r="4" fill="#FDE68A"/>
+            <circle cx="390" cy="322" r="4" fill="#FDE68A"/>
+            <circle cx="440" cy="322" r="4" fill="#FDE68A"/>
+            <text x="300" y="312" fill="#FDE68A" font-size="11" font-weight="700" text-anchor="middle">Lưới thép: Ф14a150 (2 phương)</text>
+
+            <polygon points="120,380 480,410 480,365 120,365" fill="rgba(56, 189, 248, 0.2)" stroke="#38BDF8" stroke-width="1.5"/>
+            <text x="130" y="400" fill="#38BDF8" font-size="10" font-weight="700">pmax = ${pmax} kPa</text>
+            <text x="470" y="400" fill="#38BDF8" font-size="10" font-weight="700" text-anchor="end">ptb = ${ptb} kPa</text>
+        </svg>`;
+
+        document.getElementById('footSvgContainer').innerHTML = svg;
+    }
+
+    // ===================================================================
+    // THREE.JS 3D BIM ENGINE CHO MÓNG ĐƠN
+    // ===================================================================
+    let footScene, footCamera, footRenderer, footControls, foot3DGroup;
+
+    function initFoot3D() {
+        if (footRenderer) return;
+        const container = document.getElementById('foot3DContainer');
+        const w = container.clientWidth || 600;
+        const h = container.clientHeight || 440;
+
+        footScene = new THREE.Scene();
+        footScene.background = new THREE.Color(0x070B14);
+
+        footCamera = new THREE.PerspectiveCamera(45, w / h, 0.1, 1000);
+        footCamera.position.set(14, 12, 14);
+
+        footRenderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+        footRenderer.setSize(w, h);
+        footRenderer.setPixelRatio(window.devicePixelRatio);
+        container.appendChild(footRenderer.domElement);
+
+        footControls = new THREE.OrbitControls(footCamera, footRenderer.domElement);
+        footControls.enableDamping = true;
+
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.85);
+        footScene.add(ambientLight);
+
+        const dirLight = new THREE.DirectionalLight(0x38BDF8, 1.2);
+        dirLight.position.set(15, 20, 15);
+        footScene.add(dirLight);
+
+        const gridHelper = new THREE.GridHelper(20, 20, 0x38BDF8, 0x1E293B);
+        gridHelper.position.y = -3.5;
+        footScene.add(gridHelper);
+
+        foot3DGroup = new THREE.Group();
+        footScene.add(foot3DGroup);
+
+        window.addEventListener('resize', onFootWindowResize);
+
+        function animate() {
+            requestAnimationFrame(animate);
+            if (footControls) footControls.update();
+            if (footRenderer && footScene && footCamera) {
+                footRenderer.render(footScene, footCamera);
+            }
+        }
+        animate();
+    }
+
+    function onFootWindowResize() {
+        if (!footRenderer || !footCamera) return;
+        const container = document.getElementById('foot3DContainer');
+        const w = container.clientWidth;
+        const h = container.clientHeight;
+        if (w > 0 && h > 0) {
+            footCamera.aspect = w / h;
+            footCamera.updateProjectionMatrix();
+            footRenderer.setSize(w, h);
+        }
+    }
+
+    function resetFoot3DCamera() {
+        if (footCamera && footControls) {
+            footCamera.position.set(14, 12, 14);
+            footControls.target.set(0, 0, 0);
+            footControls.update();
+        }
+    }
+
+    function updateFoot3DModel() {
+        if (!foot3DGroup) return;
+        while (foot3DGroup.children.length > 0) {
+            foot3DGroup.remove(foot3DGroup.children[0]);
+        }
+
+        const B_m = lastFootData.B * 2.2;
+        const L_m = lastFootData.L * 2.2;
+        const footHeight = 2.0;
+
+        // Đế Móng Bê Tông Vát 3D
+        const footGeo = new THREE.BoxGeometry(B_m, footHeight, L_m);
+        const footMat = new THREE.MeshPhysicalMaterial({
+            color: 0x1E293B,
+            transparent: true,
+            opacity: 0.38,
+            transmission: 0.35,
+            roughness: 0.2
+        });
+        const footMesh = new THREE.Mesh(footGeo, footMat);
+        footMesh.position.y = -2;
+        foot3DGroup.add(footMesh);
+
+        const edges = new THREE.EdgesGeometry(footGeo);
+        const line = new THREE.LineSegments(edges, new THREE.LineBasicMaterial({ color: 0x38BDF8 }));
+        line.position.y = -2;
+        foot3DGroup.add(line);
+
+        // Cổ Cột
+        const colPedGeo = new THREE.BoxGeometry(1.8, 3.2, 1.8);
+        const colPedMesh = new THREE.Mesh(colPedGeo, footMat);
+        colPedMesh.position.y = 0.5;
+        foot3DGroup.add(colPedMesh);
+
+        const colLine = new THREE.LineSegments(new THREE.EdgesGeometry(colPedGeo), new THREE.LineBasicMaterial({ color: 0x38BDF8 }));
+        colLine.position.y = 0.5;
+        foot3DGroup.add(colLine);
+
+        // Lưới Thép Đáy Móng 3D Đan 2 Phương
+        const rebarMat = new THREE.MeshStandardMaterial({ color: 0xF59E0B, metalness: 0.85, roughness: 0.25 });
+        const yMesh = -2.8;
+
+        // Thanh phương X
+        for (let ix = -L_m / 2 + 0.5; ix <= L_m / 2 - 0.5; ix += 0.8) {
+            const rxGeo = new THREE.CylinderGeometry(0.06, 0.06, B_m - 0.6, 12);
+            rxGeo.rotateZ(Math.PI / 2);
+            const rx = new THREE.Mesh(rxGeo, rebarMat);
+            rx.position.set(0, yMesh, ix);
+            foot3DGroup.add(rx);
+        }
+
+        // Thanh phương Y
+        for (let iy = -B_m / 2 + 0.5; iy <= B_m / 2 - 0.5; iy += 0.8) {
+            const ryGeo = new THREE.CylinderGeometry(0.06, 0.06, L_m - 0.6, 12);
+            ryGeo.rotateX(Math.PI / 2);
+            const ry = new THREE.Mesh(ryGeo, rebarMat);
+            ry.position.set(iy, yMesh + 0.08, 0);
+            foot3DGroup.add(ry);
+        }
+    }
+
+    // ===================================================================
+    // ENGINE 4: BẢN SÀN BTCT (BỘ NÃO BẢO TOÀN)
+    // ===================================================================
+    function updateSlab() {
+        const L1 = parseFloat(document.getElementById('slab_L1').value);
+        const L2 = parseFloat(document.getElementById('slab_L2').value);
+        const gs = parseFloat(document.getElementById('slab_gs').value);
+        const ps = parseFloat(document.getElementById('slab_ps').value);
+
+        document.getElementById('lbl_sL1').innerText = L1 + ' m';
+        document.getElementById('lbl_sL2').innerText = L2 + ' m';
+        document.getElementById('lbl_sgs').innerText = gs + ' kN/m²';
+        document.getElementById('lbl_sps').innerText = ps + ' kN/m²';
+
+        const L_short = Math.min(L1, L2);
+        const L_long = Math.max(L1, L2);
+        const ratio = (L_long / L_short).toFixed(2);
+        const q_total = gs + ps;
+
+        let slabType = '';
+        let hs = 0;
+        let Mmax = 0;
+
+        if (ratio > 2.0) {
+            slabType = "Bản loại dầm (1 phương)";
+            hs = Math.max(80, Math.ceil((L_short * 1000 / 32) / 10) * 10);
+            Mmax = (q_total * L_short * L_short) / 11;
+        } else {
+            slabType = "Bản kê 4 cạnh (2 phương)";
+            hs = Math.max(80, Math.ceil((L_short * 1000 / 42.5) / 10) * 10);
+            Mmax = (q_total * L_short * L_short) / 14;
+        }
+
+        document.getElementById('slab_ratio').innerText = ratio;
+        document.getElementById('slab_work_type').innerText = slabType;
+        document.getElementById('slab_hs').innerText = hs + ' mm';
+        document.getElementById('slab_Mmax').innerText = Mmax.toFixed(2) + ' kN·m';
+
+        renderSlabSvg(L1, L2, hs, ratio > 2.0);
+    }
+
+    function renderSlabSvg(L1, L2, hs, isOneWay) {
+        const svgW = 600, svgH = 460;
+        const svg = `
+        <svg id="slabSvg" class="blueprint-svg" viewBox="0 0 ${svgW} ${svgH}">
+            <defs>
+                <pattern id="gridPattern4" width="20" height="20" patternUnits="userSpaceOnUse">
+                    <path d="M 20 0 L 0 0 0 20" fill="none" stroke="${isLightMode ? 'rgba(0,0,0,0.06)' : 'rgba(255,255,255,0.04)'}" stroke-width="1"/>
+                </pattern>
+            </defs>
+            <rect width="100%" height="100%" fill="url(#gridPattern4)" />
+
+            <text x="25" y="30" fill="${isLightMode ? '#0F172A' : '#F8FAFC'}" font-size="13" font-weight="700">MẶT BẰNG Ô SÀN S1: L1 = ${L1}m, L2 = ${L2}m (hs = ${hs}mm)</text>
+
+            <rect x="80" y="60" width="440" height="220" fill="${isLightMode ? '#E2E8F0' : '#1E293B'}" stroke="#38BDF8" stroke-width="2.5" rx="4"/>
+
+            ${(() => {
+                let lines = '';
+                for (let x = 120; x <= 480; x += 40) {
+                    lines += `<line x1="${x}" y1="70" x2="${x}" y2="270" stroke="#F59E0B" stroke-width="1.5" stroke-dasharray="4,2"/>`;
+                }
+                for (let y = 90; y <= 250; y += 35) {
+                    lines += `<line x1="90" y1="${y}" x2="510" y2="${y}" stroke="#60A5FA" stroke-width="1.5"/>`;
+                }
+                return lines;
+            })()}
+
+            ${isOneWay ? `
+                <line x1="300" y1="120" x2="300" y2="220" stroke="#EF4444" stroke-width="3"/>
+                <text x="315" y="175" fill="#EF4444" font-size="11" font-weight="700">LÀM VIỆC 1 PHƯƠNG</text>
+            ` : `
+                <line x1="300" y1="120" x2="300" y2="220" stroke="#10B981" stroke-width="2.5"/>
+                <line x1="220" y1="170" x2="380" y2="170" stroke="#10B981" stroke-width="2.5"/>
+                <text x="300" y="165" fill="#10B981" font-size="11" font-weight="700" text-anchor="middle">LÀM VIỆC 2 PHƯƠNG</text>
+            `}
+
+            <rect x="80" y="330" width="440" height="30" fill="${isLightMode ? '#CBD5E1' : '#0F172A'}" stroke="#38BDF8" stroke-width="1.8"/>
+            <text x="300" y="350" fill="#38BDF8" font-size="10" font-weight="700" text-anchor="middle">MẶT CẮT BẢN SÀN (hs = ${hs}mm, LỚP BẢO VỆ c = 15mm)</text>
+            <circle cx="160" cy="348" r="4" fill="#F59E0B"/>
+            <circle cx="230" cy="348" r="4" fill="#F59E0B"/>
+            <circle cx="300" cy="348" r="4" fill="#F59E0B"/>
+            <circle cx="370" cy="348" r="4" fill="#F59E0B"/>
+            <circle cx="440" cy="348" r="4" fill="#F59E0B"/>
+        </svg>`;
+
+        document.getElementById('slabCanvasBox').innerHTML = svg;
+    }
+
+    // ===================================================================
+    // ENGINE 5: THÁP TẢI GIÓ (BỘ NÃO BẢO TOÀN)
+    // ===================================================================
+    function updateWind() {
+        const reg = document.getElementById('wind_region').value;
+        const fl = parseInt(document.getElementById('wind_floors').value);
+        const B = parseFloat(document.getElementById('wind_B').value);
+
+        document.getElementById('lbl_wFloors').innerText = fl + ' tầng';
+        document.getElementById('lbl_wB').innerText = B + ' m';
+
+        const H = (fl * 3.6).toFixed(1);
+        const W0_map = { "I": 0.65, "II": 0.95, "III": 1.25, "IV": 1.55, "V": 1.85 };
+        const W0 = W0_map[reg] || 1.25;
+        const Qbase = Math.round(W0 * 1.2 * B * (fl * 3.6) * 0.7);
+
+        document.getElementById('wind_H').innerText = H + ' m';
+        document.getElementById('wind_Qbase').innerText = Qbase + ' kN';
+
+        renderWindSvg(fl, B, W0);
+    }
+
+    function renderWindSvg(fl, B, W0) {
+        const svgW = 600, svgH = 460;
+        const svg = `
+        <svg id="windSvg" class="blueprint-svg" viewBox="0 0 ${svgW} ${svgH}">
+            <defs>
+                <pattern id="gridPattern5" width="20" height="20" patternUnits="userSpaceOnUse">
+                    <path d="M 20 0 L 0 0 0 20" fill="none" stroke="${isLightMode ? 'rgba(0,0,0,0.06)' : 'rgba(255,255,255,0.04)'}" stroke-width="1"/>
+                </pattern>
+            </defs>
+            <rect width="100%" height="100%" fill="url(#gridPattern5)" />
+
+            <text x="25" y="30" fill="${isLightMode ? '#0F172A' : '#F8FAFC'}" font-size="13" font-weight="700">BIỂU ĐỒ PHÂN BỐ GIÓ THEO CHIỀU CAO NHÀ (${fl} TẦNG - W0 = ${W0} kN/m²)</text>
+
+            <rect x="180" y="60" width="120" height="340" fill="${isLightMode ? '#E2E8F0' : '#1E293B'}" stroke="#38BDF8" stroke-width="2"/>
+            <text x="240" y="230" fill="#38BDF8" font-size="11" font-weight="700" text-anchor="middle">TÒA NHÀ (${fl} TẦNG)</text>
+
+            ${(() => {
+                let arrows = '';
+                const step = 340 / fl;
+                for (let i = 0; i < fl; i++) {
+                    const y = 400 - i * step;
+                    const len = 40 + i * (120 / fl);
+                    const xStart = 170 - len;
+                    arrows += `
+                        <line x1="${xStart}" y1="${y}" x2="170" y2="${y}" stroke="#38BDF8" stroke-width="2"/>
+                        <polygon points="175,${y} 165,${y-4} 165,${y+4}" fill="#38BDF8"/>
+                    `;
+                }
+                return arrows;
+            })()}
+
+            <line x1="360" y1="400" x2="360" y2="60" stroke="#94A3B8" stroke-width="1.5"/>
+            <line x1="360" y1="400" x2="550" y2="400" stroke="#94A3B8" stroke-width="1.5"/>
+            <path d="M 360 400 Q 420 280 520 60 L 360 60 Z" fill="rgba(245, 158, 11, 0.25)" stroke="#F59E0B" stroke-width="2"/>
+            <text x="440" y="55" fill="#FDE68A" font-size="10" font-weight="700">ÁP LỰC GIÓ W(z)</text>
+            <text x="450" y="420" fill="#94A3B8" font-size="10">Lực cắt đáy Qbase</text>
+        </svg>`;
+
+        document.getElementById('windCanvasBox').innerHTML = svg;
+    }
+
+    // ===================================================================
+    // ENGINE 6: PROCTOR (BỘ NÃO BẢO TOÀN)
+    // ===================================================================
+    function updateProctor() {
+        const delta = parseFloat(document.getElementById('proc_delta').value);
+        document.getElementById('lbl_delta').innerText = delta.toFixed(2) + ' g/cm³';
+        renderProctorSvg(delta);
+    }
+
+    function renderProctorSvg(delta) {
+        const svgW = 600, svgH = 460;
+        const svg = `
+        <svg id="proctorSvg" class="blueprint-svg" viewBox="0 0 ${svgW} ${svgH}">
+            <defs>
+                <pattern id="gridPattern6" width="20" height="20" patternUnits="userSpaceOnUse">
+                    <path d="M 20 0 L 0 0 0 20" fill="none" stroke="${isLightMode ? 'rgba(0,0,0,0.06)' : 'rgba(255,255,255,0.04)'}" stroke-width="1"/>
+                </pattern>
+            </defs>
+            <rect width="100%" height="100%" fill="url(#gridPattern6)" />
+
+            <text x="25" y="30" fill="${isLightMode ? '#0F172A' : '#F8FAFC'}" font-size="13" font-weight="700">ĐƯỜNG CONG ĐẦM CHẶT PROCTOR & ĐƯỜNG BÃO HÒA KHÍ (&Delta; = ${delta})</text>
+
+            <line x1="80" y1="380" x2="540" y2="380" stroke="#94A3B8" stroke-width="1.8"/>
+            <line x1="80" y1="380" x2="80" y2="70" stroke="#94A3B8" stroke-width="1.8"/>
+            <text x="540" y="405" fill="#94A3B8" font-size="11" font-weight="700">Độ ẩm W (%)</text>
+            <text x="75" y="60" fill="#94A3B8" font-size="11" font-weight="700" text-anchor="end">&gamma;d (g/cm³)</text>
+
+            <path d="M 120 340 Q 280 100 460 360" fill="none" stroke="#38BDF8" stroke-width="3"/>
+
+            <circle cx="160" cy="300" r="5" fill="#F59E0B" stroke="#FFF" stroke-width="1.5"/>
+            <circle cx="210" cy="220" r="5" fill="#F59E0B" stroke="#FFF" stroke-width="1.5"/>
+            <circle cx="280" cy="155" r="7" fill="#10B981" stroke="#FFF" stroke-width="2"/>
+            <circle cx="350" cy="210" r="5" fill="#F59E0B" stroke="#FFF" stroke-width="1.5"/>
+            <circle cx="410" cy="300" r="5" fill="#F59E0B" stroke="#FFF" stroke-width="1.5"/>
+
+            <line x1="280" y1="155" x2="280" y2="380" stroke="#10B981" stroke-width="1.5" stroke-dasharray="4,2"/>
+            <line x1="80" y1="155" x2="280" y2="155" stroke="#10B981" stroke-width="1.5" stroke-dasharray="4,2"/>
+            <text x="280" y="140" fill="#34D399" font-size="11" font-weight="700" text-anchor="middle">ĐỈNH (Wopt = 13.8%, &gamma;d,max = 1.92 g/cm³)</text>
+
+            <path d="M 150 140 Q 300 240 500 320" fill="none" stroke="#F43F5E" stroke-width="2" stroke-dasharray="6,3"/>
+            <text x="480" y="305" fill="#F43F5E" font-size="10" font-weight="700">Đường bão hòa khí (Sr = 100%)</text>
+        </svg>`;
+
+        document.getElementById('proctorCanvasBox').innerHTML = svg;
+    }
+
+    // ===================================================================
+    // ENGINE 7: BOQ & CẤP PHỐI (BỘ NÃO BẢO TOÀN)
+    // ===================================================================
+    const sampleRebars = [
+        { comp: "Dầm B101", no: "1", dia: 18, len: 6.2, qty: 4 },
+        { comp: "Dầm B101", no: "2", dia: 12, len: 6.2, qty: 2 },
+        { comp: "Dầm B101", no: "3 (Đai)", dia: 8, len: 1.4, qty: 38 },
+        { comp: "Cột C1", no: "4", dia: 20, len: 3.8, qty: 6 },
+        { comp: "Cột C1", no: "5 (Đai)", dia: 8, len: 1.6, qty: 24 },
+        { comp: "Móng M1", no: "6 (Đáy)", dia: 14, len: 3.2, qty: 22 },
+        { comp: "Bản sàn S1", no: "7", dia: 8, len: 6.2, qty: 45 }
+    ];
+
+    function updateBOQ() {
+        const V = parseFloat(document.getElementById('boq_V').value) || 35;
+        const grade = document.getElementById('boq_mix_grade').value;
+        const mix = MIX_DB[grade] || MIX_DB["M250"];
+
+        const c_tot = Math.round(V * mix.cement);
+        document.getElementById('boq_cement').innerText = c_tot.toLocaleString() + ' kg';
+        document.getElementById('boq_cement_bags').innerText = 'Tương đương ' + Math.ceil(c_tot / 50) + ' bao 50kg';
+        document.getElementById('boq_sand').innerText = (V * mix.sand).toFixed(1) + ' m³';
+        document.getElementById('boq_stone').innerText = (V * mix.stone).toFixed(1) + ' m³';
+        document.getElementById('boq_water').innerText = Math.round(V * mix.water).toLocaleString() + ' Lít';
+
+        let tbody = '';
+        let totalKg = 0;
+        sampleRebars.forEach(r => {
+            const w_per_m = (r.dia * r.dia) / 162.0;
+            const kg = r.len * r.qty * w_per_m;
+            totalKg += kg;
+            tbody += `
+                <tr>
+                    <td><b>${r.comp}</b></td>
+                    <td>${r.no}</td>
+                    <td>Ф${r.dia}</td>
+                    <td>${r.len} m</td>
+                    <td>${r.qty}</td>
+                    <td><b>${kg.toFixed(1)} kg</b></td>
+                </tr>
+            `;
+        });
+        document.getElementById('boqTableBody').innerHTML = tbody;
+        document.getElementById('boq_total_ton').innerText = (totalKg / 1000).toFixed(2) + ' Tấn thép';
+    }
+
+    // KHỞI CHẠY HỆ THỐNG
+    window.onload = function() {
+        updateBeam();
+        updateColumn();
+        updateFooting();
+        updateSlab();
+        updateWind();
+        updateProctor();
+        updateBOQ();
+    };
+</script>
+
+</body>
+</html>
