@@ -10,17 +10,22 @@ echo.
 set "GIT_EXE=C:\Program Files\Git\cmd\git.exe"
 if not exist "%GIT_EXE%" set "GIT_EXE=git"
 
-echo [1/3] Kiểm tra cấu hình Remote...
-"%GIT_EXE%" remote remove origin 2>nul
-"%GIT_EXE%" remote add origin https://github.com/vantruongbui747-cpu/smartconstruct-web-ai.git
+echo [1/4] Đồng bộ và thêm tất cả các file mới (git add)...
+"%GIT_EXE%" add .
 
 echo.
-echo [2/3] Chuyển nhánh chính main...
+echo [2/4] Tạo bản đóng gói commit tự động...
+"%GIT_EXE%" commit -m "Update SmartConstruct 3D BIM & Blueprint CAD" 2>nul
+
+echo.
+echo [3/4] Cấu hình Remote origin...
+"%GIT_EXE%" remote remove origin 2>nul
+"%GIT_EXE%" remote add origin https://github.com/vantruongbui747-cpu/smartconstruct-web-ai.git
 "%GIT_EXE%" branch -M main
 
 echo.
-echo [3/3] Đang đẩy toàn bộ mã nguồn lên GitHub...
-echo (Nếu có cửa sổ GitHub hiện lên, bạn chỉ cần bấm "Sign in with your browser" để xác nhận một lần)
+echo [4/4] Đang đẩy toàn bộ mã nguồn lên GitHub...
+echo (Nếu có cửa sổ GitHub hiện lên, bạn chỉ cần bấm "Sign in with your browser" để xác nhận)
 echo.
 
 "%GIT_EXE%" push -u origin main
