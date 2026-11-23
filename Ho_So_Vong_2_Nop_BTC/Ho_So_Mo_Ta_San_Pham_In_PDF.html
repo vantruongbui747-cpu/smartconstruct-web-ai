@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <title>Hồ Sơ Mô Tả Sản Phẩm - SmartConstruct Web AI (Mẫu 1)</title>
+    <style>
+        @page {
+            size: A4;
+            margin: 20mm 15mm 20mm 20mm;
+        }
+        body {
+            font-family: 'Times New Roman', Times, serif;
+            font-size: 13pt;
+            line-height: 1.35;
+            color: #0F172A;
+            background: #FFF;
+            margin: 0;
+            padding: 20px;
+        }
+        .header-dtu {
+            text-align: center;
+            color: #8B1520;
+            font-weight: bold;
+            font-size: 11pt;
+            border-bottom: 2px solid #8B1520;
+            padding-bottom: 8px;
+            margin-bottom: 25px;
+        }
+        .title-doc {
+            text-align: center;
+            color: #8B1520;
+            font-size: 20pt;
+            font-weight: bold;
+            margin-bottom: 6px;
+        }
+        .subtitle-doc {
+            text-align: center;
+            color: #C5A059;
+            font-size: 13pt;
+            font-weight: bold;
+            margin-bottom: 25px;
+        }
+        h2 {
+            color: #8B1520;
+            font-size: 14pt;
+            border-bottom: 1px solid #CBD5E1;
+            padding-bottom: 4px;
+            margin-top: 24px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 15px 0;
+            font-size: 11pt;
+        }
+        th, td {
+            border: 1px solid #94A3B8;
+            padding: 8px 10px;
+            text-align: left;
+        }
+        th {
+            background-color: #8B1520;
+            color: #FFF;
+        }
+        .highlight-box {
+            background: #F8FAFC;
+            border-left: 4px solid #8B1520;
+            padding: 12px 16px;
+            margin: 15px 0;
+            font-size: 12pt;
+        }
+        .footer-sign {
+            margin-top: 40px;
+            display: flex;
+            justify-content: space-between;
+            text-align: center;
+            page-break-inside: avoid;
+        }
+        @media print {
+            body { padding: 0; }
+            .no-print { display: none; }
+        }
+    </style>
+</head>
+<body>
+    <div class="no-print" style="background: #0F172A; color: #FFF; padding: 12px 20px; border-radius: 8px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center;">
+        <span>📄 <b>Bản Xem Trước In Hồ Sơ Mô Tả Sản Phẩm (Mẫu 1)</b> • Bấm nút bên phải để xuất PDF ngay lập tức:</span>
+        <button onclick="window.print()" style="background: #8B1520; color: #FFF; border: 1px solid #C5A059; padding: 8px 18px; font-weight: bold; border-radius: 6px; cursor: pointer;">🖨️ In / Lưu Dạng PDF (Ctrl + P)</button>
+    </div>
+
+    <div class="header-dtu">
+        BỘ GIÁO DỤC VÀ ĐÀO TẠO • TRƯỜNG ĐẠI HỌC DUY TÂN (DTU)<br>
+        KHOA XÂY DỰNG • BỘ MÔN KỸ THUẬT CÔNG TRÌNH
+    </div>
+
+    <div class="subtitle-doc">CUỘC THI SÁNG TẠO ỨNG DỤNG TRÍ TUỆ NHÂN TẠO 2026 • BẢNG A</div>
+    <div class="title-doc">HỒ SƠ MÔ TẢ SẢN PHẨM DỰ THI (MẪU 1)</div>
+    <div style="text-align: center; font-weight: bold; font-size: 15pt; color: #0F172A; margin-bottom: 20px;">
+        SMARTCONSTRUCT WEB AI: NỀN TẢNG WEB TRỢ LÝ KỸ THUẬT, TRA CỨU TIÊU CHUẨN TCVN & MÔ HÌNH HÓA 3D BIM KẾT CẤU XÂY DỰNG THÔNG MINH
+    </div>
+
+    <div class="highlight-box">
+        <b>Tác giả chính:</b> Bùi Văn Trường • <b>Đơn vị:</b> Khoa Xây Dựng, Trường Đại Học Duy Tân<br>
+        <b>Hạng mục:</b> BẢNG A – Ứng dụng phần mềm, website • <b>Thời hạn nộp:</b> 23h59 ngày 30/11/2026<br>
+        <b>Đường dẫn Web chạy thực tế:</b> https://vantruongbui747-cpu.github.io/smartconstruct-web-ai/
+    </div>
+
+    <h2>1. THÔNG TIN CHUNG VÀ MỤC TIÊU DỰ ÁN</h2>
+    <p>SmartConstruct Web AI là nền tảng số toàn diện hỗ trợ sinh viên và kỹ sư xây dựng giải quyết bài toán lớn: Tra cứu tiêu chuẩn TCVN, tính toán kết cấu cơ học chính xác tuyệt đối, mô hình hóa 3D BIM trực tiếp trên Web và tự động xuất hồ sơ thuyết minh kỹ thuật.</p>
+
+    <h2>2. KIẾN TRÚC HYBRID 3 LỚP ĐỘC ĐÁO CHỐNG ẢO GIÁC AI</h2>
+    <p>Hệ thống phân định rạch ròi 3 tầng công nghệ: Lõi toán học giải tích Python/JS (sai số = 0), Lõi đồ họa 3D BIM WebGL Three.js (xoay lồng thép 360 độ) và Lõi AI Gemini đóng vai trò trợ lý tra cứu pháp lý TCVN/BIM.</p>
+
+    <h2>3. CHI TIẾT 06 PHÂN HỆ CỐT LÕI</h2>
+    <ul>
+        <li><b>Phân hệ 1 (Kết cấu BTCT):</b> Tính sàn 1 phương/2 phương, dầm chịu uốn & cắt TCVN 5574:2018, cột chịu nén lệch tâm & biểu đồ P-M.</li>
+        <li><b>Phân hệ 2 (Địa kỹ thuật & Móng):</b> Đường cong đầm chặt Proctor và tính toán móng đơn nông TCVN 9362:2012.</li>
+        <li><b>Phân hệ 3 (Tải gió & SAP2000):</b> Bản đồ tải trọng gió TCVN 2737:2023 và tính năng lọc nội lực file Excel SAP2000 tự động.</li>
+        <li><b>Phân hệ 4 (Chatbot TCVN & BIM):</b> Tra cứu Luật Xây dựng, Nghị định 206/2026/NĐ-CP và trắc nghiệm pháp luật xây dựng.</li>
+        <li><b>Phân hệ 5 & 6 (Thi công & Xuất file Word):</b> Định mức cấp phối vật tư bê tông, thống kê thép Auto-BOQ xuất Excel và xuất thuyết minh Word (.docx).</li>
+    </ul>
+
+    <h2>4. BẢNG PHÂN ĐỊNH ĐÓNG GÓP MINH BẠCH (LIÊM CHÍNH HỌC THUẬT)</h2>
+    <table>
+        <thead>
+            <tr>
+                <th>Hạng mục thành phần</th>
+                <th>Tự làm (Human Core)</th>
+                <th>AI hỗ trợ</th>
+                <th>Kế thừa nguồn mở</th>
+                <th>Tỷ lệ tự làm</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr><td>Toán học & Tiêu chuẩn TCVN</td><td>Thiết lập công thức dầm, cột, móng, gió</td><td>Kiểm tra cú pháp code</td><td>Không</td><td><b>85%</b></td></tr>
+            <tr><td>Cơ sở dữ liệu số hóa TCVN</td><td>Thu thập, kiểm chứng bảng tra bê tông, thép</td><td>Định dạng cấu trúc JSON</td><td>Không</td><td><b>80%</b></td></tr>
+            <tr><td>Đồ họa 3D BIM & 2D CAD</td><td>Thiết kế bố cục, màu sắc, khung tên DTU</td><td>Sinh mã Three.js, SVG</td><td>Three.js r128</td><td><b>60%</b></td></tr>
+            <tr><td>Giao diện Web Dashboard</td><td>Thiết kế UX flow, nút Demo 1-Click</td><td>Tối ưu mã HTML5/CSS3</td><td>Streamlit, Fonts</td><td><b>65%</b></td></tr>
+            <tr><td>Trợ lý RAG & Pháp lý BIM</td><td>Biên soạn 50 câu trắc nghiệm, tuyển luật</td><td>Suy luận ngôn ngữ tự nhiên</td><td>Gemini API</td><td><b>70%</b></td></tr>
+            <tr><td>Bóc tách BOQ & Xuất file Word</td><td>Mẫu thuyết minh chuẩn ĐH Duy Tân</td><td>Sinh module file .docx, .xlsx</td><td>python-docx</td><td><b>75%</b></td></tr>
+        </tbody>
+    </table>
+
+    <div class="footer-sign">
+        <div>
+            <b>XÁC NHẬN CỦA KHOA XÂY DỰNG</b><br>
+            <i>(Ký, đóng dấu và ghi rõ họ tên)</i>
+        </div>
+        <div>
+            <b>ĐẠI DIỆN NHÓM TÁC GIẢ</b><br>
+            <i>(Ký và ghi rõ họ tên)</i><br><br><br><br>
+            <b>Bùi Văn Trường</b>
+        </div>
+    </div>
+</body>
+</html>
